@@ -7,22 +7,22 @@ export async function POST(req: NextRequest) {
     const selectedModel = model || "llama3.2-vision:latest";
 
     // Build scientific decision support system prompt with actual telemetry
-    const systemPrompt = `Sen NASA ve Artemis programı için çalışan uzman bir Ay İniş ve Gezegensel Karar Destek Asistanısın (Lunar Landing & Planetary Decision Support Advisor).
-Kullanıcıya daima Türkçe, bilimsel olarak tutarlı, net ve profesyonel yanıtlar ver.
-Şu anda seçili olan iniş sahası ve telemetri verileri aşağıdadır:
+    const systemPrompt = `You are an expert Lunar Landing & Planetary Decision Support Advisor for NASA and the Artemis program.
+Always provide answers in clear, scientifically consistent, precise, and professional English.
+The currently selected landing site and mission telemetry are summarized below:
 
---- AKTİF İNİŞ SAHASI BİLGİLERİ ---
-- Hedef Adı: ${siteContext?.targetName || "Shackleton Crater Rim"}
-- Koordinatlar: ${siteContext?.lat || -89.54}° Enlem, ${siteContext?.lng || -138.0}° Boylam
-- Rakım: ${siteContext?.elevationM || 1420} m (LRO LOLA Datum Ref)
-- Ölçülen Yüzey Eğimi: ${siteContext?.measuredSlope || "3.5"}°
-- Aktif İniş Aracı: ${siteContext?.landerName || "CLPS Commercial Lander"} (Maks Eğim Limiti: ${siteContext?.maxSlopeDeg || 8.0}°, Kütle: ${siteContext?.massKg || 1800} kg)
-- Yıllık Güneşlenme (Solar Uptime): %${siteContext?.solarUptimePct || 86}
-- Kalıcı Gölgeli Bölge (PSR) & Su Buzu İndeksi: %${siteContext?.waterIceProbabilityPct || 78} (LRO LEND nötron spektrometresi)
-- Doğrudan Dünya İletişimi (DTE LOS): ${siteContext?.directEarthLOS ? "Açık (Doğrudan DSN görüşü var)" : "Kapalı (Ay arkasında veya derin krater çukurunda, röle uydusu zorunlu)"}
-- İniş Değerlendirmesi: ${siteContext?.overallScore || 85} / 100 (${siteContext?.classification || "NOMINAL"})
+--- ACTIVE LUNAR LANDING SITE TELEMETRY ---
+- Target Name: ${siteContext?.targetName || "Shackleton Crater Rim"}
+- Coordinates: ${siteContext?.lat || -89.54}° Lat, ${siteContext?.lng || -138.0}° Lng
+- Elevation: ${siteContext?.elevationM || 1420} m (LRO LOLA Datum Reference)
+- Measured Surface Slope: ${siteContext?.measuredSlope || "3.5"}°
+- Active Lander Profile: ${siteContext?.landerName || "CLPS Commercial Lander"} (Max Slope Limit: ${siteContext?.maxSlopeDeg || 8.0}°, Mass: ${siteContext?.massKg || 1800} kg)
+- Annual Illumination Uptime: ${siteContext?.solarUptimePct || 86}%
+- Permanently Shadowed Region (PSR) & Volatile Index: ${siteContext?.waterIceProbabilityPct || 78}% (LRO LEND neutron detector)
+- Direct-to-Earth Communication (DTE LOS): ${siteContext?.directEarthLOS ? "Unobstructed (Direct DSN carrier lock)" : "Occluded (Horizon obstacle, orbital relay required)"}
+- Landing Assessment Score: ${siteContext?.overallScore || 85} / 100 (${siteContext?.classification || "NOMINAL"})
 
-Bu verileri göz önünde bulundurarak iniş güvenliği, devrilme riskleri, güç üretimi, su buzu madenciliği veya iletişim pencereleri hakkında kullanıcının sorularını açıkla. Spekülasyon yapma, NASA verilerini ve fiziği temel al.`;
+Analyze landing safety, tip-over dynamics, photovoltaic power continuity, in-situ water ice extraction, or DSN communication windows based on these metrics. Ground all reasoning strictly in physics and verified NASA mission data.`;
 
     const fullMessages = [
       { role: "system", content: systemPrompt },
@@ -49,12 +49,12 @@ Bu verileri göz önünde bulundurarak iniş güvenliği, devrilme riskleri, gü
 
     const data = await ollamaRes.json();
     return NextResponse.json({
-      reply: data.message?.content || "Cevap üretilemedi.",
+      reply: data.message?.content || "No response generated.",
       model: selectedModel,
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Ollama bağlantı hatası", details: err.message },
+      { error: "Ollama connection error", details: err.message },
       { status: 500 }
     );
   }

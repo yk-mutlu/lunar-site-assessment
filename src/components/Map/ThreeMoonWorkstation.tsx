@@ -19,13 +19,12 @@ export const ThreeMoonWorkstation: React.FC = () => {
 
   const [mouseCoord, setMouseCoord] = useState<{ lat: number; lng: number } | null>(null);
   const [altitudeKm, setAltitudeKm] = useState(3800);
-  const [currentHemisphere, setCurrentHemisphere] = useState<"KYK" | "GYK">("KYK");
+  const [currentHemisphere, setCurrentHemisphere] = useState<"Northern" | "Southern">("Northern");
 
   const {
     activeLayer,
     layerOpacity,
-    sunAzimuthDeg,
-    sunElevationDeg,
+    lunarDayHour,
     enableLighting,
     selectedTarget,
     setSelectedTarget,
@@ -36,6 +35,7 @@ export const ThreeMoonWorkstation: React.FC = () => {
     setPolygonStats,
     activeLander,
     setViewMode,
+    rightPanelOpen,
   } = useStore();
 
   const isPolygonModeRef = useRef(isPolygonMode);
@@ -102,7 +102,7 @@ export const ThreeMoonWorkstation: React.FC = () => {
     const textureLoader = new THREE.TextureLoader();
 
     // Load textures
-    const imageryTex = textureLoader.load("/textures/moon_surface.jpg");
+    const imageryTex = textureLoader.load("/textures/moon_surface_4k.jpg");
     imageryTex.colorSpace = THREE.SRGBColorSpace;
     texturesRef.current.imagery = imageryTex;
 
@@ -120,21 +120,53 @@ export const ThreeMoonWorkstation: React.FC = () => {
 
     const sphereMat = new THREE.MeshStandardMaterial({
       map: imageryTex,
-      roughness: 0.88,
-      metalness: 0.05,
+      bumpMap: elevTex,
+      bumpScale: 0.05,
+      roughness: 0.92,
+      metalness: 0.03,
     });
     const sphere = new THREE.Mesh(sphereGeo, sphereMat);
     scene.add(sphere);
     sphereRef.current = sphere;
 
-    // 4. Lighting (Sun with shadow terminator + ambient light: darker shadow side for realistic vacuum)
-    const ambientLight = new THREE.AmbientLight(0xffffff, enableLighting ? 0.08 : 0.65);
+    // Distant Earth in Lunar Sky (Apollo "Earthrise" effect)
+    const earthGeo = new THREE.SphereGeometry(0.55, 64, 64);
+    const earthTex = textureLoader.load("/textures/earth_surface.jpg");
+    earthTex.colorSpace = THREE.SRGBColorSpace;
+    const earthMat = new THREE.MeshStandardMaterial({
+      map: earthTex,
+      roughness: 0.7,
+      metalness: 0.1,
+    });
+    const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+    earthMesh.position.set(-18, 9, -24); // Positioned high in the cislunar backdrop
+    scene.add(earthMesh);
+
+    // Earth atmosphere halo in lunar sky
+    const earthHaloGeo = new THREE.SphereGeometry(0.57, 32, 32);
+    const earthHaloMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.BackSide,
+    });
+    const earthHaloMesh = new THREE.Mesh(earthHaloGeo, earthHaloMat);
+    earthHaloMesh.position.copy(earthMesh.position);
+    scene.add(earthHaloMesh);
+
+    // 4. Lighting (Sun with shadow terminator + ambient light + Earthshine fill light)
+    const ambientLight = new THREE.AmbientLight(0xffffff, enableLighting ? 0.38 : 0.75);
     scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffffff, 2.6);
+    const sunLight = new THREE.DirectionalLight(0xfffdf6, 2.8);
     sunLight.position.set(3, 1, 3);
     scene.add(sunLight);
     sunLightRef.current = sunLight;
+
+    // Dünya Işığı (Earthshine): Ay'ın gece tarafını aydınlatan zarif mavi-beyaz dolaylı yansıma
+    const earthshineLight = new THREE.DirectionalLight(0x88c4ff, 0.65);
+    earthshineLight.position.set(-18, 9, -24);
+    scene.add(earthshineLight);
 
     // 5. Target Reticle Group
     const reticleGroup = new THREE.Group();
@@ -178,7 +210,7 @@ export const ThreeMoonWorkstation: React.FC = () => {
       camera.lookAt(0, 0, 0);
 
       setAltitudeKm(Math.round((spherical.radius - 1.0) * 1737.4));
-      setCurrentHemisphere(camera.position.y >= 0 ? "KYK" : "GYK");
+      setCurrentHemisphere(camera.position.y >= 0 ? "Northern" : "Southern");
     };
     updateCameraPos();
 
@@ -253,11 +285,11 @@ export const ThreeMoonWorkstation: React.FC = () => {
         } else {
           setSelectedTarget({
             id: `custom_${Date.now()}`,
-            name: `Saha (${lat >= 0 ? `${lat}°K` : `${Math.abs(lat)}°G`}, ${lng >= 0 ? `${lng}°D` : `${Math.abs(lng)}°B`})`,
+            name: `Target Site (${lat >= 0 ? `${lat}°N` : `${Math.abs(lat)}°S`}, ${lng >= 0 ? `${lng}°E` : `${Math.abs(lng)}°W`})`,
             lat,
             lng,
             elevationM: Math.round(Math.sin(lat) * 2000),
-            description: "3D küre üzerinden seçilen hedef iniş noktası.",
+            description: "Target coordinates selected directly on the 3D lunar sphere.",
             isCandidate: false,
           });
         }
@@ -281,11 +313,11 @@ export const ThreeMoonWorkstation: React.FC = () => {
 
         setSelectedTarget({
           id: `custom_${Date.now()}`,
-          name: `Saha (${lat >= 0 ? `${lat}°K` : `${Math.abs(lat)}°G`}, ${lng >= 0 ? `${lng}°D` : `${Math.abs(lng)}°B`})`,
+          name: `Target Site (${lat >= 0 ? `${lat}°N` : `${Math.abs(lat)}°S`}, ${lng >= 0 ? `${lng}°E` : `${Math.abs(lng)}°W`})`,
           lat,
           lng,
           elevationM: Math.round(Math.sin(lat) * 2000),
-          description: "Sub-metre yüzey ve çakıl taşı incelemesi.",
+          description: "Sub-meter surface and regolith boulder inspection.",
           isCandidate: false,
         });
         setViewMode("surface");
@@ -344,26 +376,33 @@ export const ThreeMoonWorkstation: React.FC = () => {
     }
   }, [activeLayer, layerOpacity]);
 
-  // Update lighting (Sun position & ambient)
+  // Update lighting (True celestial Sun position based on astronomical synodic time, independent of site selection)
   useEffect(() => {
     if (!sunLightRef.current || !sceneRef.current) return;
-    const radAz = (sunAzimuthDeg * Math.PI) / 180;
-    const radEl = (sunElevationDeg * Math.PI) / 180;
 
-    const dist = 5.0;
-    const x = dist * Math.cos(radEl) * Math.sin(radAz);
-    const y = dist * Math.sin(radEl);
-    const z = dist * Math.cos(radEl) * Math.cos(radAz);
+    const synodicPeriod = 708.73;
+    const solarFraction = (((lunarDayHour % synodicPeriod) + synodicPeriod) % synodicPeriod) / synodicPeriod;
+    const subSolarLng = (180 - solarFraction * 360 + 360) % 360;
+    const lunarSeasonPhase = (lunarDayHour / (365.25 * 24)) * 2 * Math.PI;
+    const subSolarLat = 1.54 * Math.sin(lunarSeasonPhase);
+
+    const phi = ((90 - subSolarLat) * Math.PI) / 180;
+    const theta = ((subSolarLng + 180) * Math.PI) / 180;
+
+    const sunDist = 6.0;
+    const x = -sunDist * Math.sin(phi) * Math.cos(theta);
+    const y = sunDist * Math.cos(phi);
+    const z = sunDist * Math.sin(phi) * Math.sin(theta);
 
     sunLightRef.current.position.set(x, y, z);
-    sunLightRef.current.intensity = enableLighting ? 2.4 : 0.0;
+    sunLightRef.current.intensity = enableLighting ? 2.6 : 0.0;
 
     sceneRef.current.traverse((obj) => {
       if (obj instanceof THREE.AmbientLight) {
-        obj.intensity = enableLighting ? 0.08 : 0.65;
+        obj.intensity = enableLighting ? 0.38 : 0.75;
       }
     });
-  }, [sunAzimuthDeg, sunElevationDeg, enableLighting]);
+  }, [lunarDayHour, enableLighting]);
 
   // Update 3D Reticle position
   useEffect(() => {
@@ -442,25 +481,45 @@ export const ThreeMoonWorkstation: React.FC = () => {
 
     cameraRef.current.position.set(targetX, targetY, targetZ);
     cameraRef.current.lookAt(0, 0, 0);
-    setCurrentHemisphere(targetY >= 0 ? "KYK" : "GYK");
+    setCurrentHemisphere(targetY >= 0 ? "Northern" : "Southern");
   };
 
   return (
     <div className="relative w-full h-full bg-[#1a1c22] overflow-hidden select-none">
-      {/* Dynamic Hemisphere Indicator (KYK / GYK) at Top Center */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
-        <div className="bg-[#181a20]/95 backdrop-blur-md px-6 py-2 rounded-full border border-[#282a33] shadow-tesla flex items-center gap-3">
+      {/* Unified Telemetry & Hemisphere Status Pill at Top Center (Clean, Unobstructed) */}
+      <div className="absolute top-[72px] left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
+        <div className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full border border-[#E8EAED] shadow-[0_2px_8px_rgba(0,0,0,0.12)] flex items-center gap-3 text-xs font-sans text-[#202124] pointer-events-auto">
           <span
-            className={`w-3 h-3 rounded-full ${
-              currentHemisphere === "KYK" ? "bg-[#4a9eff]" : "bg-[#d86c6c]"
-            } animate-pulse shadow-sm`}
+            className={`w-2.5 h-2.5 rounded-full ${
+              currentHemisphere === "Northern" ? "bg-[#1A73E8]" : "bg-[#EA4335]"
+            } animate-pulse`}
           />
-          <span className="font-mono text-base font-extrabold tracking-wider text-[#f4f4f6]">
-            {currentHemisphere}
+          <span className="font-semibold text-[#202124]">
+            {currentHemisphere === "Northern" ? "Northern Hemisphere" : "Southern Hemisphere"}
           </span>
-          <span className="text-[#9496a1] text-xs font-sans font-medium border-l border-[#282a33] pl-2.5">
-            {currentHemisphere === "KYK" ? "Kuzey Yarımküre" : "Güney Yarımküre"}
-          </span>
+          <span className="text-[#E8EAED]">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#5F6368]">Cursor:</span>
+            {mouseCoord ? (
+              <span className="font-mono text-[#202124] font-medium tabular-nums">
+                {mouseCoord.lat >= 0 ? `${mouseCoord.lat}°N` : `${Math.abs(mouseCoord.lat)}°S`},{" "}
+                {mouseCoord.lng >= 0 ? `${mouseCoord.lng}°E` : `${Math.abs(mouseCoord.lng)}°W`}
+              </span>
+            ) : (
+              <span className="text-[#9AA0A6] font-mono">Off-Disk</span>
+            )}
+          </div>
+          <span className="text-[#E8EAED]">•</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#5F6368]">Altitude:</span>
+            <span className="font-mono text-[#202124] font-medium tabular-nums">
+              {altitudeKm.toLocaleString()} km
+            </span>
+          </div>
+          <span className="text-[#E8EAED]">•</span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#1A73E8] font-medium">
+            <span>|—— 100 km ——|</span>
+          </div>
         </div>
       </div>
 
@@ -472,51 +531,53 @@ export const ThreeMoonWorkstation: React.FC = () => {
         }`}
       />
 
-      {/* Tesla Style Floating Navigation Controls (Bottom Right) */}
-      <div className="absolute bottom-6 right-4 z-30 flex flex-col items-center gap-2 select-none pointer-events-auto">
+      {/* Floating Navigation Controls (Bottom Right - Smoothly shifts when Right Place Card is open) */}
+      <div className={`absolute bottom-6 z-30 flex flex-col items-center gap-2 select-none pointer-events-auto transition-all duration-300 ${
+        rightPanelOpen ? "right-[408px]" : "right-4"
+      }`}>
         {/* Quick Orientation Pill Group */}
-        <div className="bg-[#181a20]/95 backdrop-blur-md rounded-2xl shadow-tesla border border-[#282a33] p-1 flex flex-col gap-1 text-[11px] font-sans">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-[#E8EAED] p-1 flex flex-col gap-1 text-[11px] font-sans text-[#202124]">
           <button
             onClick={() => flyToTarget(-89.9, 0)}
-            className="px-2.5 py-1.5 rounded-xl hover:bg-[#22242c] text-[#f4f4f6] font-medium flex items-center gap-1.5 transition-colors text-left cursor-pointer"
-            title="Güney Kutbu (Artemis İniş Havzası)"
+            className="px-2.5 py-1.5 rounded-xl hover:bg-[#F1F3F4] text-[#202124] font-medium flex items-center gap-1.5 transition-colors text-left cursor-pointer"
+            title="South Pole (Artemis Landing Zone)"
           >
-            <Crosshair className="w-3.5 h-3.5 text-[#d86c6c]" />
-            <span>Güney Kutbu</span>
+            <Crosshair className="w-3.5 h-3.5 text-[#1A73E8]" />
+            <span>South Pole</span>
           </button>
           <button
             onClick={() => flyToTarget(89.5, 0)}
-            className="px-2.5 py-1.5 rounded-xl hover:bg-[#22242c] text-[#9496a1] hover:text-[#f4f4f6] transition-colors text-left cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl hover:bg-[#F1F3F4] text-[#5F6368] hover:text-[#202124] transition-colors text-left cursor-pointer"
           >
             <Compass className="w-3.5 h-3.5" />
-            <span>Kuzey Kutbu</span>
+            <span>North Pole</span>
           </button>
           <button
             onClick={() => flyToTarget(0, 0)}
-            className="px-2.5 py-1.5 rounded-xl hover:bg-[#22242c] text-[#9496a1] hover:text-[#f4f4f6] transition-colors text-left cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl hover:bg-[#F1F3F4] text-[#5F6368] hover:text-[#202124] transition-colors text-left cursor-pointer"
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>Yakın Yüz</span>
+            <span>Near Side</span>
           </button>
           <button
             onClick={() => flyToTarget(0, 180)}
-            className="px-2.5 py-1.5 rounded-xl hover:bg-[#22242c] text-[#9496a1] hover:text-[#f4f4f6] transition-colors text-left cursor-pointer"
+            className="px-2.5 py-1.5 rounded-xl hover:bg-[#F1F3F4] text-[#5F6368] hover:text-[#202124] transition-colors text-left cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Uzak Yüz</span>
+            <span>Far Side</span>
           </button>
         </div>
 
         {/* Zoom In / Zoom Out Vertical Pill */}
-        <div className="bg-[#181a20]/95 backdrop-blur-md rounded-2xl shadow-tesla border border-[#282a33] flex flex-col overflow-hidden">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.12)] border border-[#E8EAED] flex flex-col overflow-hidden text-[#202124]">
           <button
             onClick={() => {
               if (cameraRef.current) {
                 cameraRef.current.position.multiplyScalar(0.85);
               }
             }}
-            className="p-2.5 hover:bg-[#22242c] text-[#f4f4f6] border-b border-[#282a33] transition-colors cursor-pointer"
-            title="Yakınlaştır"
+            className="p-2.5 hover:bg-[#F1F3F4] text-[#202124] border-b border-[#E8EAED] transition-colors cursor-pointer"
+            title="Zoom In"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -526,49 +587,15 @@ export const ThreeMoonWorkstation: React.FC = () => {
                 cameraRef.current.position.multiplyScalar(1.15);
               }
             }}
-            className="p-2.5 hover:bg-[#22242c] text-[#f4f4f6] transition-colors cursor-pointer"
-            title="Uzaklaştır"
+            className="p-2.5 hover:bg-[#F1F3F4] text-[#202124] transition-colors cursor-pointer"
+            title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
         </div>
       </div>
-
-      {/* Surface Descent Button & Scale Telemetry Pill (Bottom Center) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 select-none">
-        <button
-          onClick={() => setViewMode("surface")}
-          className="bg-[#d86c6c] hover:bg-[#c55a5a] text-white px-5 py-2 rounded-full shadow-tesla border border-[#e68383]/40 flex items-center gap-2 text-xs font-semibold transition-transform active:scale-95 cursor-pointer backdrop-blur-md"
-        >
-          <Crosshair className="w-4 h-4" />
-          <span>Yüzeye İn & Çakıl/Kaya İncele (Sub-Meter)</span>
-        </button>
-
-        <div className="bg-[#181a20]/95 rounded-full px-4 py-1.5 shadow-tesla border border-[#282a33] flex items-center gap-4 text-xs font-sans text-[#9496a1] pointer-events-auto backdrop-blur-md">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#9496a1]">İmleç:</span>
-            {mouseCoord ? (
-              <span className="font-mono text-[#f4f4f6] font-medium tabular-nums">
-                {mouseCoord.lat >= 0 ? `${mouseCoord.lat}°K` : `${Math.abs(mouseCoord.lat)}°G`},{" "}
-                {mouseCoord.lng >= 0 ? `${mouseCoord.lng}°D` : `${Math.abs(mouseCoord.lng)}°B`}
-              </span>
-            ) : (
-              <span className="text-[#5c5e69] font-mono">Boşlukta</span>
-            )}
-          </div>
-          <span className="text-[#282a33]">•</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#9496a1]">İrtifa:</span>
-            <span className="font-mono text-[#f4f4f6] font-medium tabular-nums">
-              {altitudeKm.toLocaleString()} km
-            </span>
-          </div>
-          <span className="text-[#282a33]">•</span>
-          <div className="flex items-center gap-1.5 font-mono text-[11px] text-[#d86c6c] font-medium">
-            <span>|—— 100 km ——|</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
+
+export default ThreeMoonWorkstation;

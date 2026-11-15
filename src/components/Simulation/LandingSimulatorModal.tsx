@@ -16,6 +16,12 @@ import {
   RefreshCw,
   Compass,
   ArrowLeft,
+  Globe,
+  Moon,
+  ShieldCheck,
+  Cpu,
+  Layers,
+  Sparkles,
 } from "lucide-react";
 import { SimulationEngine, TelemetryData } from "./engine/SimulationEngine";
 import {
@@ -24,6 +30,8 @@ import {
   LANDER_PROFILES,
 } from "./engine/config";
 import type { CandidateSite } from "@/data/site-scoring-types";
+import { EarthLaunchView } from "./EarthLaunchView";
+import type { LunarRobotMissionCalculations } from "@/data/earth-launch-service";
 
 interface LandingSimulatorModalProps {
   isOpen: boolean;
@@ -71,6 +79,26 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
     setIsMapRendererPaused(isOpen);
     return () => setIsMapRendererPaused(false);
   }, [isOpen, setIsMapRendererPaused]);
+
+  // ── Mission Pipeline Stage (Earth Launch -> Lunar Descent) ─────────
+  const [missionStage, setMissionStage] = useState<"earth_launch" | "lunar_descent">("earth_launch");
+  const [robotMissionData, setRobotMissionData] = useState<LunarRobotMissionCalculations | null>(null);
+
+  const switchStage = (stage: "earth_launch" | "lunar_descent") => {
+    setMissionStage(stage);
+    if (stage === "lunar_descent") {
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 50);
+    }
+  };
+
+  const handleApplyEarthCalculations = (calc: LunarRobotMissionCalculations) => {
+    setRobotMissionData(calc);
+    setMaxTolerableSlopeDeg(calc.recommendedMaxSlopeDeg);
+    setTouchdownSpeedLimitMs(calc.safeTouchdownVelocityLimitMs);
+    switchStage("lunar_descent");
+  };
 
   // ── Simulation State & Controls ─────────────────────────────────────
   const [simRunning, setSimRunning] = useState(false);
@@ -224,6 +252,8 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
       terrainSeed: siteSeed,
       initialAltitudeM: 3000,
       initialVerticalSpeedMs: 65,
+      initialFuelPct: robotMissionData ? robotMissionData.remainingFuelForLunarDescentPct : 100,
+      sensorNoisePct: robotMissionData ? robotMissionData.sensorNoiseDegradationPct : 0,
     });
   };
 
@@ -254,40 +284,70 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 -ml-2 rounded-full hover:bg-[#22242c] text-[#9496a1] hover:text-white transition-colors cursor-pointer flex items-center gap-1.5"
-              title="Haritaya Dön"
+              title="Return to Map"
             >
-              <ArrowLeft className="w-4 h-4 text-[#d86c6c]" />
-              <span className="text-xs font-semibold text-[#f4f4f6]">Haritaya Dön</span>
+              <ArrowLeft className="w-4 h-4 text-[#1A73E8]" />
+              <span className="text-xs font-semibold text-[#f4f4f6]">Return to Map</span>
             </button>
 
             <div className="h-5 w-px bg-[#282a33]" />
 
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[rgba(216,108,108,0.15)] flex items-center justify-center">
-                <Rocket className="w-4 h-4 text-[#d86c6c]" />
+              <div className="w-8 h-8 rounded-full bg-[#1A73E8]/15 flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-[#1A73E8]" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-[#f4f4f6] text-sm">
-                    {siteData ? `${siteData.code} · ${siteData.name}` : "Ay İniş Dinamikleri & Fizik Simülatörü"}
+                    {siteData ? `${siteData.code} · ${siteData.name}` : "Lunar Mission & Descent Simulator"}
                   </span>
                   {siteData ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#282a33] text-[#34c759] border border-[#34c759]/30">
-                      Saha Puanı: {siteData.overallScore.toFixed(1)}/10
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold font-mono bg-[#282a33] text-[#34c759] border border-[#34c759]/30">
+                      Site Score: {siteData.overallScore.toFixed(1)}/10
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#282a33] text-[#d86c6c] border border-[#d86c6c]/30">
-                      Jüri Doğrulama Modülü
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[#282a33] text-[#1A73E8] border border-[#1A73E8]/30">
+                      Mission Validation Engine
                     </span>
                   )}
                 </div>
                 <span className="text-xs text-[#9496a1]">
-                  {siteData
-                    ? `Rakım: ${siteData.elevationM} m • Ölçülen Eğim: ${siteData.measuredSlopeDeg}° • DSN LOS: ${siteData.earthLOS ? "Açık" : "Röle"}`
-                    : "Jüri Parametre Doğrulama Modülü · Tsiolkovsky & 120Hz RK4 İniş Fiziği"}
+                  Earth Launch • Space Weather • Heliophysics • Lunar Descent
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Central Mission Stage Switcher Tabs */}
+          <div className="hidden md:flex items-center rounded-xl bg-[#121317] p-1 border border-[#282a33]">
+            <button
+              onClick={() => switchStage("earth_launch")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                missionStage === "earth_launch"
+                  ? "bg-[#38bdf8] text-[#0d0e12] shadow-sm font-bold"
+                  : "text-[#9496a1] hover:text-[#f4f4f6]"
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>1. Earth Liftoff & Space Weather</span>
+            </button>
+            <button
+              onClick={() => switchStage("lunar_descent")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                missionStage === "lunar_descent"
+                  ? "bg-[#1A73E8] text-white shadow-sm font-bold"
+                  : "text-[#9496a1] hover:text-[#f4f4f6]"
+              }`}
+            >
+              <Moon className="w-3.5 h-3.5" />
+              <span>2. Lunar Descent Simulator</span>
+              {robotMissionData && (
+                <span
+                  className="w-2 h-2 rounded-full bg-[#34c759] animate-pulse"
+                  title="Earth liftoff calculations integrated"
+                />
+              )}
+            </button>
           </div>
 
           {/* Quick Header Actions */}
@@ -297,9 +357,9 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
               className={`p-2 rounded-full border transition-colors cursor-pointer ${
                 isMuted
                   ? "bg-[#22242c] text-[#5c5e69] border-[#282a33]"
-                  : "bg-[rgba(216,108,108,0.15)] text-[#d86c6c] border-[#d86c6c]/40"
+                  : "bg-[#1A73E8]/15 text-[#1A73E8] border-[#1A73E8]/40"
               }`}
-              title="Web Audio Sesi Aç/Kapat"
+              title="Audio Mute/Unmute"
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
@@ -307,7 +367,7 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
             <button
               onClick={() => setPresentationMode((p) => !p)}
               className="p-2 text-[#9496a1] hover:text-[#f4f4f6] rounded-full hover:bg-[#22242c] border border-[#282a33] transition-colors cursor-pointer"
-              title="Sunum Modu (Kısayol: H)"
+              title="Presentation Mode (Shortcut: H)"
             >
               {presentationMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -322,7 +382,17 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
         </div>
 
         {/* Main Body */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        {/* Stage 1: Earth Launch, Weather, Radiation & Robot Calculations */}
+        <div className={missionStage === "earth_launch" ? "flex-1 flex flex-col overflow-hidden" : "hidden"}>
+          <EarthLaunchView
+            onProceedToLunarDescent={handleApplyEarthCalculations}
+            siteName={siteData?.name}
+            measuredSlope={targetTerrainSlopeDeg}
+          />
+        </div>
+
+        {/* Stage 2: 3D Lunar Landing Simulator */}
+        <div className={missionStage === "lunar_descent" ? "flex-1 flex flex-col lg:flex-row overflow-hidden relative" : "hidden"}>
           {/* Left: 3D Landing Simulation Viewport */}
           <div className="flex-1 relative bg-[#060709] flex flex-col overflow-hidden">
             <div ref={canvasContainerRef} className="w-full h-full" />
@@ -333,33 +403,33 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
               <div className="flex rounded-xl bg-[#121317] p-0.5 border border-[#282a33]">
                 <button
                   onClick={() => setCameraMode("cinematic")}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     cameraMode === "cinematic"
-                      ? "bg-[#d86c6c] text-white shadow-sm"
+                      ? "bg-[#1A73E8] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
                 >
-                  Sinematik
+                  Cinematic
                 </button>
                 <button
                   onClick={() => setCameraMode("free_orbit")}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     cameraMode === "free_orbit"
-                      ? "bg-[#d86c6c] text-white shadow-sm"
+                      ? "bg-[#1A73E8] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
                 >
-                  Serbest
+                  Free 3D
                 </button>
                 <button
                   onClick={() => setCameraMode("onboard")}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     cameraMode === "onboard"
-                      ? "bg-[#d86c6c] text-white shadow-sm"
+                      ? "bg-[#1A73E8] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
                 >
-                  Araç İçi (HUD)
+                  Onboard (HUD)
                 </button>
               </div>
 
@@ -367,20 +437,20 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
               <div className="flex rounded-xl bg-[#121317] p-0.5 border border-[#282a33]">
                 <button
                   onClick={() => setTimeScale(0.25)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
+                  className={`px-2 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
                     timeScale === 0.25
                       ? "bg-[#34c759] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
-                  title="Ağır Çekim (Slow Motion)"
+                  title="Slow Motion (0.25x)"
                 >
                   0.25x
                 </button>
                 <button
                   onClick={() => setTimeScale(1.0)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
+                  className={`px-2 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
                     timeScale === 1.0
-                      ? "bg-[#d86c6c] text-white shadow-sm"
+                      ? "bg-[#1A73E8] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
                 >
@@ -388,9 +458,9 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                 </button>
                 <button
                   onClick={() => setTimeScale(2.0)}
-                  className={`px-2 py-1 rounded-lg text-[11px] font-mono font-medium transition-all ${
+                  className={`px-2 py-1 rounded-lg text-xs font-mono font-medium transition-all ${
                     timeScale === 2.0
-                      ? "bg-[#d86c6c] text-white shadow-sm"
+                      ? "bg-[#1A73E8] text-white shadow-sm"
                       : "text-[#9496a1] hover:text-white"
                   }`}
                 >
@@ -402,14 +472,35 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
             {/* Flight HUD Telemetry Overlay */}
             {!presentationMode && (
               <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none z-10 max-w-xs">
+                {/* Dynamic Earth Launch & Radiation Sync Badge */}
+                {robotMissionData && (
+                  <div className="bg-[#14151a]/95 border border-[#38bdf8]/40 rounded-2xl p-2.5 text-xs space-y-1 shadow-tesla font-sans backdrop-blur-md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-[#38bdf8] font-bold">
+                        <Sparkles className="w-3 h-3 text-[#38bdf8]" />
+                        <span>EARTH LAUNCH TELEMETRY SYNCED</span>
+                      </div>
+                      <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-[#34c759]/20 text-[#34c759] font-bold">
+                        Synced
+                      </span>
+                    </div>
+                    <div className="text-xs text-[#9496a1] grid grid-cols-2 gap-1 pt-0.5">
+                      <span>Remaining Fuel: <strong className="text-[#34c759]">%{robotMissionData.remainingFuelForLunarDescentPct}</strong></span>
+                      <span>Sensor Noise: <strong className="text-[#f59e0b]">+{robotMissionData.sensorNoiseDegradationPct}%</strong></span>
+                      <span>Atmospheric Loss: <strong className="text-[#f4f4f6]">+{robotMissionData.launchAtmosphericLossDVMs - 1250} m/s</strong></span>
+                      <span>Autonomy: <strong className="text-[#38bdf8]">{robotMissionData.autonomousDecisionLevel}</strong></span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-[#181a20]/95 border border-[#282a33] rounded-2xl p-3 text-xs space-y-2 shadow-tesla font-sans backdrop-blur-md">
                   {/* Mission Phase Badge */}
                   <div className="flex items-center justify-between pb-1.5 border-b border-[#282a33]">
-                    <span className="text-[#9496a1] uppercase tracking-wider text-[10px] font-semibold">
-                      Uçuş Fazı
+                    <span className="text-[#9496a1] uppercase tracking-wider text-xs font-semibold">
+                      Flight Phase
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider ${
+                      className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono tracking-wider ${
                         telemetry.phase === "TOUCHDOWN"
                           ? "bg-[rgba(52,199,89,0.2)] text-[#34c759] border border-[#34c759]/40"
                           : telemetry.isAnomaly
@@ -424,7 +515,7 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   {/* Altitude & Sparkline */}
                   <div>
                     <div className="flex justify-between items-baseline">
-                      <span className="text-[#9496a1]">İrtifa (Radar):</span>
+                      <span className="text-[#9496a1]">Altitude (Radar):</span>
                       <span className="text-[#f4f4f6] font-bold font-mono text-sm tabular-nums">
                         {telemetry.altitudeM.toLocaleString()} m
                       </span>
@@ -448,11 +539,11 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                   {/* Vertical Speed */}
                   <div className="flex justify-between items-center">
-                    <span className="text-[#9496a1]">Dikey Hız (Vz):</span>
+                    <span className="text-[#9496a1]">Vertical Speed (Vz):</span>
                     <span
                       className={`font-bold font-mono tabular-nums ${
                         telemetry.verticalSpeedMs > touchdownSpeedLimitMs && telemetry.altitudeM < 100
-                          ? "text-[#d86c6c] animate-pulse"
+                          ? "text-[#EA4335] animate-pulse"
                           : "text-[#f4f4f6]"
                       }`}
                     >
@@ -462,7 +553,7 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                   {/* Horizontal Speed */}
                   <div className="flex justify-between items-center">
-                    <span className="text-[#9496a1]">Yatay Hız (Vh):</span>
+                    <span className="text-[#9496a1]">Horizontal Speed (Vh):</span>
                     <span className="text-[#9496a1] font-mono tabular-nums">
                       {telemetry.horizontalSpeedMs} m/s
                     </span>
@@ -470,13 +561,13 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                   {/* Throttle Bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-[#9496a1]">Motor İtkisi (Throttle):</span>
-                      <span className="text-[#d86c6c] font-mono font-bold">%{telemetry.throttlePct}</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#9496a1]">Engine Throttle:</span>
+                      <span className="text-[#1A73E8] font-mono font-bold">%{telemetry.throttlePct}</span>
                     </div>
                     <div className="w-full h-1.5 bg-[#22242c] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-[#d86c6c] to-[#ff8844] transition-all duration-75"
+                        className="h-full bg-gradient-to-r from-[#1A73E8] to-[#34A853] transition-all duration-75"
                         style={{ width: `${telemetry.throttlePct}%` }}
                       />
                     </div>
@@ -484,11 +575,11 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                   {/* Fuel Bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-[#9496a1]">Kalan Yakıt:</span>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-[#9496a1]">Remaining Fuel:</span>
                       <span
                         className={`font-mono font-bold ${
-                          telemetry.fuelPct < 15 ? "text-[#d86c6c] animate-pulse" : "text-[#34c759]"
+                          telemetry.fuelPct < 15 ? "text-[#EA4335] animate-pulse" : "text-[#34c759]"
                         }`}
                       >
                         %{telemetry.fuelPct}
@@ -497,7 +588,7 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                     <div className="w-full h-1.5 bg-[#22242c] rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all duration-100 ${
-                          telemetry.fuelPct < 15 ? "bg-[#d86c6c]" : "bg-[#34c759]"
+                          telemetry.fuelPct < 15 ? "bg-[#EA4335]" : "bg-[#34c759]"
                         }`}
                         style={{ width: `${telemetry.fuelPct}%` }}
                       />
@@ -506,14 +597,14 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                   {/* Radar Status */}
                   <div className="flex justify-between items-center pt-1 border-t border-[#282a33]">
-                    <span className="text-[#9496a1]">TRN Radar Kilidi:</span>
+                    <span className="text-[#9496a1]">TRN Radar Lock:</span>
                     <span
-                      className={`font-mono font-bold text-[10px] ${
+                      className={`font-mono font-bold text-xs ${
                         telemetry.radarStatus === "LOCK"
                           ? "text-[#34c759]"
                           : telemetry.radarStatus === "SEARCH"
                           ? "text-[#f59e0b]"
-                          : "text-[#d86c6c] animate-pulse"
+                          : "text-[#EA4335] animate-pulse"
                       }`}
                     >
                       {telemetry.radarStatus}
@@ -537,36 +628,36 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                     {simResult.success ? (
                       <>
                         <CheckCircle2 className="w-5 h-5 text-[#34c759]" />
-                        <span>İNİŞ BAŞARILI · STATİK DENGE SAĞLANDI</span>
+                        <span>TOUCHDOWN SUCCESSFUL · STATIC EQUILIBRIUM ACHIEVED</span>
                       </>
                     ) : (
                       <>
                         <AlertTriangle className="w-5 h-5 text-[#d86c6c] animate-pulse" />
-                        <span>GÖREV BAŞARISIZ · ANOMALİ RAPORU</span>
+                        <span>MISSION FAILED · ANOMALY REPORT</span>
                       </>
                     )}
                   </div>
 
                   <span className="font-mono text-xs text-[#f4f4f6]">
-                    Temas Hızı: {simResult.touchdownVelocityMs.toFixed(2)} m/s
+                    Touchdown Speed: {simResult.touchdownVelocityMs.toFixed(2)} m/s
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-[#f4f4f6]">{simResult.cause}</p>
 
                 {/* Additional Physics Margins */}
-                <div className="pt-2 flex flex-wrap gap-4 border-t border-[#282a33] text-[11px] text-[#9496a1]">
+                <div className="pt-2 flex flex-wrap gap-4 border-t border-[#282a33] text-xs text-[#9496a1]">
                   <span>
-                    Güvenlik Marjı:{" "}
+                    Safety Margin:{" "}
                     <strong className="text-[#f4f4f6]">%{simResult.safetyMarginPct.toFixed(0)}</strong>
                   </span>
                   <span>
-                    Maks G-Kuvveti:{" "}
+                    Peak G-Force:{" "}
                     <strong className="text-[#f4f4f6]">{simResult.maxGForce.toFixed(1)} G</strong>
                   </span>
                   <span>
-                    Uçuş Süresi:{" "}
-                    <strong className="text-[#f4f4f6]">{simResult.flightTimeS.toFixed(1)} sn</strong>
+                    Flight Time:{" "}
+                    <strong className="text-[#f4f4f6]">{simResult.flightTimeS.toFixed(1)} s</strong>
                   </span>
                 </div>
               </div>
@@ -578,11 +669,11 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
             <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-[#282a33] bg-[#14151a] flex flex-col p-5 overflow-y-auto space-y-4 font-sans text-[#f4f4f6]">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-[#d86c6c] uppercase tracking-wider block">
-                    Jüri Test Parametreleri
+                  <span className="text-xs font-semibold text-[#1A73E8] uppercase tracking-wider block">
+                    Mission Test Parameters
                   </span>
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#1e2029] border border-[#282a33]">
-                    <span className="text-[10px] text-[#9496a1]">Başarı Olasılığı:</span>
+                    <span className="text-xs text-[#9496a1]">Success Probability:</span>
                     <span
                       className={`font-mono font-bold text-xs ${
                         successProbability > 70
@@ -599,25 +690,60 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
 
                 <div className="flex items-center justify-between mt-1">
                   <h3 className="text-sm font-bold text-[#f4f4f6]">
-                    Fiziksel İniş Doğrulama
+                    Physics Landing Validation
                   </h3>
                   {siteData && (
                     <button
                       onClick={handleResetToSiteDefaults}
                       disabled={simRunning}
-                      className="text-[10px] text-[#38bdf8] hover:text-white flex items-center gap-1 cursor-pointer"
-                      title="Sahanın orijinal ölçüm değerlerine sıfırla"
+                      className="text-xs text-[#38bdf8] hover:text-white flex items-center gap-1 cursor-pointer"
+                      title="Reset to original site measurements"
                     >
                       <RefreshCw className="w-3 h-3" />
-                      <span>Saha Değerlerine Sıfırla</span>
+                      <span>Reset to Site Defaults</span>
                     </button>
                   )}
                 </div>
               </div>
 
+              {/* Earth Launch Environmental Link Card */}
+              <div className="p-3.5 rounded-2xl bg-[#121317] border border-[#38bdf8]/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-[#38bdf8]" />
+                    <span className="text-xs font-bold text-white">Earth Launch & Environment</span>
+                  </div>
+                  <button
+                    onClick={() => switchStage("earth_launch")}
+                    className="text-xs text-[#38bdf8] hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
+                  >
+                    <span>{robotMissionData ? "Edit" : "Fetch Data"}</span>
+                    <ArrowLeft className="w-3 h-3 rotate-180" />
+                  </button>
+                </div>
+                <p className="text-xs text-[#9496a1] leading-relaxed">
+                  {robotMissionData
+                    ? `Launch wind shear and space radiation successfully processed. Recommended slope limit calibrated to ${robotMissionData.recommendedMaxSlopeDeg}° with safe touchdown speed ${robotMissionData.safeTouchdownVelocityLimitMs} m/s.`
+                    : "Proceed to Stage 1 to incorporate launch weather and solar radiation models into vehicle descent tolerances."}
+                </p>
+                {robotMissionData && (
+                  <div className="pt-1 flex flex-wrap gap-1.5 text-xs text-[#9496a1]">
+                    <span className="px-2 py-0.5 rounded bg-[#181a20] border border-[#282a33]">
+                      Launch Fuel: %{robotMissionData.remainingFuelForLunarDescentPct}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-[#181a20] border border-[#282a33]">
+                      Radar Margin: ±{robotMissionData.radarAltimeterVarianceM}m
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-[#181a20] border border-[#282a33]">
+                      Autonomy: {robotMissionData.autonomousDecisionLevel}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Vehicle Profile Selection */}
               <div className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] space-y-1.5">
-                <span className="text-xs font-medium text-[#f4f4f6] block">İniş Aracı Profili:</span>
+                <span className="text-xs font-medium text-[#f4f4f6] block">Lander Vehicle Profile:</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
@@ -628,12 +754,12 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                     disabled={simRunning}
                     className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all text-left ${
                       selectedProfileId === "clps_medium"
-                        ? "bg-[#d86c6c]/15 border-[#d86c6c] text-[#f4f4f6]"
+                        ? "bg-[#1A73E8]/15 border-[#1A73E8] text-[#f4f4f6]"
                         : "bg-[#181a20] border-[#282a33] text-[#9496a1] hover:border-[#383a46]"
                     }`}
                   >
                     CLPS Medium
-                    <span className="block text-[10px] font-normal text-[#9496a1]">Nova-C sınıfı (1.8 t)</span>
+                    <span className="block text-xs font-normal text-[#9496a1]">Nova-C class (1.8 t)</span>
                   </button>
 
                   <button
@@ -645,12 +771,12 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                     disabled={simRunning}
                     className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all text-left ${
                       selectedProfileId === "artemis_hls"
-                        ? "bg-[#d86c6c]/15 border-[#d86c6c] text-[#f4f4f6]"
+                        ? "bg-[#1A73E8]/15 border-[#1A73E8] text-[#f4f4f6]"
                         : "bg-[#181a20] border-[#282a33] text-[#9496a1] hover:border-[#383a46]"
                     }`}
                   >
                     Artemis HLS
-                    <span className="block text-[10px] font-normal text-[#9496a1]">Ağır İnsanlı (15.0 t)</span>
+                    <span className="block text-xs font-normal text-[#9496a1]">Heavy Human-Rated (15.0 t)</span>
                   </button>
                 </div>
               </div>
@@ -658,8 +784,8 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
               {/* Parameter 1: Ground Slope */}
               <div className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] space-y-1.5">
                 <div className="flex justify-between text-xs font-medium">
-                  <span className="text-[#f4f4f6]">Zemin Eğimi (Slope):</span>
-                  <span className="text-[#d86c6c] font-bold font-mono">{targetTerrainSlopeDeg}°</span>
+                  <span className="text-[#f4f4f6]">Surface Slope:</span>
+                  <span className="text-[#1A73E8] font-bold font-mono">{targetTerrainSlopeDeg}°</span>
                 </div>
                 <input
                   type="range"
@@ -669,17 +795,17 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   value={targetTerrainSlopeDeg}
                   onChange={(e) => setTargetTerrainSlopeDeg(Number(e.target.value))}
                   disabled={simRunning}
-                  className="w-full accent-[#d86c6c] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
+                  className="w-full accent-[#1A73E8] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
                 />
-                <span className="text-[11px] text-[#9496a1] block">
-                  {siteData ? `${siteData.name} için ölçülen yerel eğim.` : "Seçilen koordinattaki LOLA DEM eğim verisi."}
+                <span className="text-xs text-[#9496a1] block">
+                  {siteData ? `Measured local slope for ${siteData.name}.` : "Local terrain slope from LOLA DEM."}
                 </span>
               </div>
 
               {/* Parameter 2: Vehicle Max Tolerable Slope */}
               <div className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] space-y-1.5">
                 <div className="flex justify-between text-xs font-medium">
-                  <span className="text-[#f4f4f6]">Aracın Devrilme Eşik Açısı:</span>
+                  <span className="text-[#f4f4f6]">Static Tip-Over Threshold:</span>
                   <span className="text-[#f4f4f6] font-bold font-mono">{maxTolerableSlopeDeg}°</span>
                 </div>
                 <input
@@ -690,17 +816,17 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   value={maxTolerableSlopeDeg}
                   onChange={(e) => setMaxTolerableSlopeDeg(Number(e.target.value))}
                   disabled={simRunning}
-                  className="w-full accent-[#d86c6c] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
+                  className="w-full accent-[#1A73E8] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
                 />
-                <span className="text-[11px] text-[#9496a1] block">
-                  Aracın CG yüksekliği ve bacak açıklığı limiti.
+                <span className="text-xs text-[#9496a1] block">
+                  Lander center-of-mass and landing gear baseline geometry limit.
                 </span>
               </div>
 
               {/* Parameter 3: Vehicle Wet Mass */}
               <div className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] space-y-1.5">
                 <div className="flex justify-between text-xs font-medium">
-                  <span className="text-[#f4f4f6]">Uzay Aracı Toplam Kütlesi:</span>
+                  <span className="text-[#f4f4f6]">Spacecraft Wet Mass:</span>
                   <span className="text-[#f4f4f6] font-bold font-mono">
                     {landerMassKg.toLocaleString()} kg
                   </span>
@@ -713,17 +839,17 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   value={landerMassKg}
                   onChange={(e) => setLanderMassKg(Number(e.target.value))}
                   disabled={simRunning}
-                  className="w-full accent-[#d86c6c] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
+                  className="w-full accent-[#1A73E8] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
                 />
-                <span className="text-[11px] text-[#9496a1] block">
-                  Kütle arttıkça TWR düşer ve yakıt tüketimi logaritmik artar.
+                <span className="text-xs text-[#9496a1] block">
+                  Increased mass reduces TWR and accelerates propellant depletion.
                 </span>
               </div>
 
               {/* Parameter 4: Touchdown Speed Limit */}
               <div className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] space-y-1.5">
                 <div className="flex justify-between text-xs font-medium">
-                  <span className="text-[#f4f4f6]">Maksimum İniş Hızı:</span>
+                  <span className="text-[#f4f4f6]">Maximum Touchdown Velocity:</span>
                   <span className="text-[#f4f4f6] font-bold font-mono">{touchdownSpeedLimitMs} m/s</span>
                 </div>
                 <input
@@ -734,10 +860,10 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   value={touchdownSpeedLimitMs}
                   onChange={(e) => setTouchdownSpeedLimitMs(Number(e.target.value))}
                   disabled={simRunning}
-                  className="w-full accent-[#d86c6c] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
+                  className="w-full accent-[#1A73E8] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
                 />
-                <span className="text-[11px] text-[#9496a1] block">
-                  İniş bacak amortisörlerinin kinetik enerji absorpsiyon sınırı.
+                <span className="text-xs text-[#9496a1] block">
+                  Crush core / shock absorber kinetic energy absorption envelope.
                 </span>
               </div>
 
@@ -749,18 +875,18 @@ export const LandingSimulatorModal: React.FC<LandingSimulatorModalProps> = ({
                   className={`flex-1 py-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer ${
                     simRunning
                       ? "bg-[#282a33] text-[#5c5e69] cursor-not-allowed"
-                      : "bg-[#d86c6c] hover:bg-[#c55a5a] text-white"
+                      : "bg-[#1A73E8] hover:bg-[#1565C0] text-white"
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>{simRunning ? "İniş Simüle Ediliyor..." : "İniş Simülasyonunu Başlat"}</span>
+                  <span>{simRunning ? "Descent in Progress..." : "Start Descent Simulation"}</span>
                 </button>
 
                 <button
                   onClick={handleResetSimulation}
                   disabled={simRunning}
                   className="p-3 rounded-full bg-[#22242c] hover:bg-[#2c2f3a] text-[#9496a1] hover:text-[#f4f4f6] border border-[#282a33] transition-colors cursor-pointer"
-                  title="Sıfırla"
+                  title="Reset"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>

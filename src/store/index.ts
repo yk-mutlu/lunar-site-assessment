@@ -11,6 +11,14 @@ import type {
 } from "@/types";
 import type { CandidateSite } from "@/data/site-scoring-types";
 import type { SimulationResult } from "@/components/Simulation/engine/config";
+import { LAUNCH_SITES, LaunchSite } from "@/data/earth-launch-service";
+import { PRESET_SAFE_LUNAR_SITES, SafeLunarSiteOption } from "@/data/lunar-safe-sites";
+import { NASA_ROCKET_VEHICLES, RocketVehicle } from "@/data/rocket-vehicles";
+import type { RocketFlightReport, ParsedOpenRocketData } from "@/data/openrocket-engine";
+import {
+  computeMissionPlanRecommendation,
+  MissionRecommendation,
+} from "@/data/mission-recommendation-engine";
 
 export const NOTABLE_TARGETS: LunarTarget[] = [
   // --- Artemis III Candidate Sites (South Pole) ---
@@ -279,11 +287,81 @@ interface AppState {
   setIsDemoFlowActive: (v: boolean) => void;
   isMapRendererPaused: boolean;
   setIsMapRendererPaused: (v: boolean) => void;
+
+  // Earth Launch & Environmental Site
+  selectedLaunchSite: LaunchSite;
+  setSelectedLaunchSite: (site: LaunchSite) => void;
+
+  // 2D Lunar Map Landing Site Picker & Sequence Pipeline
+  is2DMapPickerOpen: boolean;
+  setIs2DMapPickerOpen: (open: boolean) => void;
+  selectedSafeLunarSite: SafeLunarSiteOption;
+  setSelectedSafeLunarSite: (site: SafeLunarSiteOption) => void;
+  launchTimeMode: "today" | "optimal";
+  setLaunchTimeMode: (mode: "today" | "optimal") => void;
+
+  // Launch Vehicle / Rocket Selection (NASA Space Apps Challenge 2026)
+  selectedRocket: RocketVehicle;
+  setSelectedRocket: (rocket: RocketVehicle) => void;
+  customOpenRocket: ParsedOpenRocketData | null;
+  setCustomOpenRocket: (data: ParsedOpenRocketData | null) => void;
+  isOpenRocketModalOpen: boolean;
+  setIsOpenRocketModalOpen: (open: boolean) => void;
+  isFlightReportModalOpen: boolean;
+  setIsFlightReportModalOpen: (open: boolean) => void;
+  latestLaunchReport: RocketFlightReport | null;
+  setLatestLaunchReport: (report: RocketFlightReport | null) => void;
+
+  // End-to-End Lunar Mission Recommendation & Setup
+  missionRecommendation: MissionRecommendation;
+  setMissionRecommendation: (rec: MissionRecommendation) => void;
+  isMissionSetupModalOpen: boolean;
+  setIsMissionSetupModalOpen: (open: boolean) => void;
+  recomputeMissionRecommendation: () => void;
 }
 
-export const useStore = create<AppState>((set) => ({
+export const useStore = create<AppState>((set, get) => ({
+  // Default entry view is Moon 3D Site Navigator (NASA Space Apps Challenge core focus)
   viewMode: "3d",
   setViewMode: (m) => set({ viewMode: m }),
+
+  selectedLaunchSite: LAUNCH_SITES[0],
+  setSelectedLaunchSite: (site) => set({ selectedLaunchSite: site }),
+
+  // Default Rocket: NASA SLS Block 1 (Artemis Program)
+  selectedRocket: NASA_ROCKET_VEHICLES[1],
+  setSelectedRocket: (rocket) => set({ selectedRocket: rocket }),
+  customOpenRocket: null,
+  setCustomOpenRocket: (data) => set({ customOpenRocket: data }),
+  isOpenRocketModalOpen: false,
+  setIsOpenRocketModalOpen: (open) => set({ isOpenRocketModalOpen: open }),
+  isFlightReportModalOpen: false,
+  setIsFlightReportModalOpen: (open) => set({ isFlightReportModalOpen: open }),
+  latestLaunchReport: null,
+  setLatestLaunchReport: (report) => set({ latestLaunchReport: report }),
+
+  // Mission Planning Recommendation
+  missionRecommendation: computeMissionPlanRecommendation(
+    PRESET_SAFE_LUNAR_SITES[0],
+    "2026-09-15T12:00",
+    180
+  ),
+  setMissionRecommendation: (rec) => set({ missionRecommendation: rec }),
+  isMissionSetupModalOpen: false,
+  setIsMissionSetupModalOpen: (open) => set({ isMissionSetupModalOpen: open }),
+  recomputeMissionRecommendation: () => {
+    const { selectedTarget, selectedSafeLunarSite, missionDate, lunarDayHour } = get();
+    const activeTarget = selectedSafeLunarSite || selectedTarget;
+    const rec = computeMissionPlanRecommendation(activeTarget, missionDate, lunarDayHour);
+    set({ missionRecommendation: rec, selectedRocket: rec.recommendedRocket });
+  },
+
+  is2DMapPickerOpen: false,
+  setIs2DMapPickerOpen: (open) => set({ is2DMapPickerOpen: open }),
+  selectedSafeLunarSite: PRESET_SAFE_LUNAR_SITES[0],
+  setSelectedSafeLunarSite: (site) => set({ selectedSafeLunarSite: site }),
+  launchTimeMode: "today",
+  setLaunchTimeMode: (mode) => set({ launchTimeMode: mode }),
 
   selectedTarget: NOTABLE_TARGETS[0],
   setSelectedTarget: (t) =>
@@ -309,7 +387,7 @@ export const useStore = create<AppState>((set) => ({
   // 2026 Artemis III launch window date baseline
   missionDate: "2026-09-15T12:00",
   setMissionDate: (d) => set({ missionDate: d }),
-  lunarDayHour: 180, // mid-morning on lunar day
+  lunarDayHour: 320, // Waxing gibbous, high surface contrast and visible craters
   setLunarDayHour: (h) =>
     set((state) => ({
       lunarDayHour: typeof h === "function" ? h(state.lunarDayHour) : h,

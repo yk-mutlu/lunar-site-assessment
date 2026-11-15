@@ -1,26 +1,10 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Geist, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-});
-
-const geistSans = Geist({
-  variable: "--font-body",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Lunar Maps — Bilimsel Ay Keşif & İniş Değerlendirme Sistemi",
+  title: "Lunar Landing Site Navigator — NASA Space Apps Challenge 2026",
   description:
-    "Google Maps ilhamlı interaktif Ay analiz platformu. NASA LRO LOLA ve Diviner verileri ile iniş sahası ve üs kurulum uygunluğu.",
+    "Google Maps-inspired scientific lunar landing site assessment and environmental navigator using NASA LRO LOLA, Diviner, and JPL Horizons ephemeris.",
 };
 
 export default function RootLayout({
@@ -29,11 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="tr"
-      className={`${spaceGrotesk.variable} ${geistSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
-    >
-      <body className="h-full w-full overflow-hidden bg-[#0b0c10] text-[#202124]">
+    <html lang="en" className="h-full antialiased">
+      <body className="h-full w-full overflow-hidden bg-[#0b0c10] text-[#f4f4f6] font-sans">
         {children}
       </body>
     </html>

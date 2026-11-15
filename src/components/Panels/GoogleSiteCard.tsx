@@ -1,3 +1,9 @@
+// ═══════════════════════════════════════════════════════════════════════
+// GoogleSiteCard.tsx
+// Google Maps-Style Place Details & Landing Site Assessment Card
+// Minimalist, Map-First Interface in English with Full Scientific Transparency
+// ═══════════════════════════════════════════════════════════════════════
+
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -13,7 +19,6 @@ import {
   CheckCircle2,
   Sliders,
   Compass,
-  Orbit,
   ChevronDown,
   Info,
   Sun,
@@ -24,6 +29,12 @@ import {
   Trash2,
   Mountain,
   Crosshair,
+  ShieldCheck,
+  Zap,
+  Layers,
+  Thermometer,
+  BookOpen,
+  Sparkles,
 } from "lucide-react";
 
 interface GoogleSiteCardProps {
@@ -51,7 +62,7 @@ export const GoogleSiteCard: React.FC<GoogleSiteCardProps> = ({
     leftDetailPanelOpen,
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<"landing" | "horizon" | "base" | "criteria">("landing");
+  const [activeTab, setActiveTab] = useState<"landing" | "horizon" | "power" | "sources">("landing");
 
   const assessment = useMemo(() => {
     return computeSiteAssessment(selectedTarget, activeLander, footprintRadiusKm);
@@ -71,389 +82,385 @@ export const GoogleSiteCard: React.FC<GoogleSiteCardProps> = ({
   const isReject = assessment.classification === "CRITICAL HAZARD - REJECT";
 
   return (
-    <div className="fixed top-20 right-4 bottom-6 z-40 w-96 max-w-[calc(100vw-2rem)] select-none font-sans pointer-events-none flex flex-col">
-      <div className="pointer-events-auto bg-[#181a20]/95 backdrop-blur-md rounded-3xl shadow-tesla border border-[#282a33] flex flex-col h-full overflow-hidden animate-fade-in text-[#f4f4f6]">
-        {/* Header & Location Title */}
-        <div className="p-4 pb-3 border-b border-[#282a33] bg-[#14151a] relative">
+    <div className="fixed top-[68px] right-4 bottom-5 z-40 w-96 max-w-[calc(100vw-2rem)] select-none font-sans pointer-events-none flex flex-col">
+      <div className="pointer-events-auto bg-white rounded-3xl shadow-[0_8px_32px_rgba(60,64,67,0.18)] border border-[#E8EAED] flex flex-col h-full overflow-hidden animate-fade-in text-[#202124]">
+
+        {/* Header & Location Title (Google Maps Clean Style) */}
+        <div className="p-4 pb-3 border-b border-[#E8EAED] bg-white relative">
           <button
             onClick={() => setRightPanelOpen(false)}
-            className="absolute top-4 right-4 p-1.5 rounded-full text-[#9496a1] hover:text-[#f4f4f6] hover:bg-[#22242c] transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-xl text-[#5F6368] hover:text-[#202124] hover:bg-[#F1F3F4] transition-colors cursor-pointer"
+            title="Close Card"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-1.5 text-xs text-[#d86c6c] font-semibold mb-1">
-            <MapPin className="w-3.5 h-3.5 fill-[#d86c6c]" />
-            <span>AY İNİŞ SAHASI NAVİGATÖRÜ</span>
+          <div className="flex items-center gap-1.5 text-xs text-[#1A73E8] font-bold mb-1">
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="uppercase tracking-wider">Lunar Landing Site Navigator</span>
           </div>
 
-          <h2 className="text-lg font-bold text-[#f4f4f6] leading-tight pr-8">
+          <h2 className="text-base font-bold text-[#202124] leading-tight pr-8">
             {selectedTarget.name}
           </h2>
 
-          <div className="flex items-center gap-2 mt-1.5 text-xs text-[#9496a1]">
-            <span className="font-mono tabular-nums font-medium text-[#f4f4f6]">
-              {selectedTarget.lat >= 0 ? `${selectedTarget.lat}°K` : `${Math.abs(selectedTarget.lat)}°G`},{" "}
-              {selectedTarget.lng >= 0 ? `${selectedTarget.lng}°D` : `${Math.abs(selectedTarget.lng)}°B`}
+          <div className="flex items-center gap-2 mt-1 text-xs text-[#5F6368]">
+            <span className="font-mono font-medium text-[#202124]">
+              {selectedTarget.lat >= 0 ? `${selectedTarget.lat.toFixed(2)}°N` : `${Math.abs(selectedTarget.lat).toFixed(2)}°S`},{" "}
+              {selectedTarget.lng >= 0 ? `${selectedTarget.lng.toFixed(2)}°E` : `${Math.abs(selectedTarget.lng).toFixed(2)}°W`}
             </span>
             <span>•</span>
-            <span>Rakım: {selectedTarget.elevationM} m</span>
+            <span>Elev: {selectedTarget.elevationM} m</span>
           </div>
 
           {/* Overall Rating / Suitability Badge */}
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#282a33]">
+          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[#E8EAED]">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold font-mono text-[#f4f4f6]">
+              <span className="text-2xl font-bold text-[#202124]">
                 {assessment.overallScore}
               </span>
-              <span className="text-xs text-[#9496a1] font-mono">/ 100 Puan</span>
+              <span className="text-xs text-[#5F6368]">/ 100 Score</span>
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                isReject
-                  ? "bg-[rgba(216,108,108,0.15)] text-[#d86c6c] border border-[rgba(216,108,108,0.3)]"
-                  : "bg-[rgba(52,199,89,0.15)] text-[#34c759] border border-[rgba(52,199,89,0.3)]"
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-bold ${isReject
+                ? "bg-[#FCE8E6] text-[#D93025]"
+                : assessment.overallScore >= 85
+                  ? "bg-[#E6F4EA] text-[#137333]"
+                  : "bg-[#FEF7E0] text-[#B06000]"
+                }`}
             >
-              {isReject ? "Kritik Risk / Red" : "İnişe Uygun / Onaylı"}
+              {assessment.classification}
             </span>
           </div>
         </div>
 
-        {/* Primary Action Buttons */}
-        <div className="px-4 py-2.5 border-b border-[#282a33] flex flex-col gap-2 bg-[#121317]">
+        {/* Primary Action Buttons (Google Style) */}
+        <div className="px-4 py-3 border-b border-[#E8EAED] flex flex-col gap-2 bg-white">
           <div className="flex gap-2">
             <button
               onClick={onOpenSimulator}
-              className="flex-1 bg-[#d86c6c] hover:bg-[#c55a5a] text-white rounded-full py-2 px-3 text-xs font-semibold flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"
+              className="flex-1 bg-[#1A73E8] hover:bg-[#1565C0] text-white rounded-2xl py-2.5 px-3 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+              title="Plan Mission & Launch Trajectory Recommendation"
             >
-              <Rocket className="w-3.5 h-3.5" />
-              <span>İnişi Simüle Et</span>
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+              <span>Plan Full Mission (Step 2)</span>
             </button>
             <button
               onClick={onOpenReport}
-              className="bg-[#22242c] hover:bg-[#2c2f3a] text-[#f4f4f6] border border-[#282a33] rounded-full py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+              className="bg-[#F8F9FA] hover:bg-[#F1F3F4] text-[#202124] border border-[#E8EAED] rounded-2xl py-2.5 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <FileText className="w-3.5 h-3.5 text-[#9496a1]" />
-              <span>Rapor Al</span>
+              <FileText className="w-3.5 h-3.5 text-[#5F6368]" />
+              <span>Briefing</span>
             </button>
           </div>
 
           <button
             onClick={() => setViewMode("surface")}
-            className="w-full bg-[#181a20] hover:bg-[#22242c] text-[#f4f4f6] border border-[#d86c6c]/40 rounded-full py-2 px-3 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+            className="w-full bg-[#F8F9FA] hover:bg-[#F1F3F4] text-[#202124] border border-[#E8EAED] rounded-2xl py-2 px-3 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
-            <Crosshair className="w-3.5 h-3.5 text-[#d86c6c]" />
-            <span>Yüzeye İn & Çakıl/Kaya İncele (Sub-Meter)</span>
+            <Crosshair className="w-3.5 h-3.5 text-[#1A73E8]" />
+            <span>3D Surface & Regolith Boulder Inspector</span>
           </button>
         </div>
 
         {/* Polygon Area Banner if active */}
         {polygonStats && (
-          <div className="px-4 py-3 bg-[rgba(216,108,108,0.08)] border-b border-[rgba(216,108,108,0.25)] flex flex-col gap-1.5 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[#d86c6c] flex items-center gap-1.5">
-                <Pentagon className="w-4 h-4" />
-                Seçilen Poligon Alanı ({polygonStats.pointCount} Nokta)
-              </span>
-              <button
-                onClick={clearPolygon}
-                className="text-[11px] text-[#9496a1] hover:text-[#d86c6c] flex items-center gap-1 cursor-pointer"
-                title="Poligonu Temizle"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>Temizle</span>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-[#9496a1] block text-[10px]">YÜZEY ALANI</span>
-                <span className="font-bold text-[#f4f4f6] font-mono">{polygonStats.areaKm2} km²</span>
-              </div>
-              <div>
-                <span className="text-[#9496a1] block text-[10px]">ORT. EĞİM</span>
-                <span className="font-bold text-[#f4f4f6] font-mono">{polygonStats.avgSlope}° (Max: {polygonStats.maxSlope}°)</span>
-              </div>
-              <div>
-                <span className="text-[#9496a1] block text-[10px]">SU BUZU ENDEKSİ</span>
-                <span className="font-bold text-[#4a9eff] font-mono">%{polygonStats.iceIndex}</span>
-              </div>
-              <div>
-                <span className="text-[#9496a1] block text-[10px]">DÜNYA LOS BAĞLANTISI</span>
-                <span className={`font-bold font-mono ${polygonStats.commsLOS ? "text-[#34c759]" : "text-[#d86c6c]"}`}>
-                  {polygonStats.commsLOS ? "Doğrudan LOS" : "Röle Gerekli"}
-                </span>
-              </div>
-            </div>
+          <div className="px-4 py-2 bg-[#FEE2E2] border-b border-[#FECACA] flex items-center justify-between text-xs text-[#B91C1C] animate-fade-in">
+            <span className="font-bold flex items-center gap-1.5">
+              <Pentagon className="w-3.5 h-3.5" />
+              Custom Polygon Area ({polygonStats.pointCount} Pts)
+            </span>
+            <button
+              onClick={clearPolygon}
+              className="p-1 hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+              title="Clear Polygon"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         )}
 
-        {/* Clean Tesla-style Segmented Tabs */}
-        <div className="flex border-b border-[#282a33] bg-[#14151a] text-xs font-medium">
+        {/* Compact Navigation Tabs (CustomTkinter Category Style) */}
+        <div className="flex border-b border-[#E2E8F0] bg-[#F8FAFC] px-2 pt-1 gap-1">
           <button
             onClick={() => setActiveTab("landing")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "landing"
-                ? "text-[#d86c6c] font-semibold"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 cursor-pointer ${activeTab === "landing"
+              ? "border-[#0F172A] text-[#0F172A] bg-white rounded-t-xl"
+              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            İniş Güvenliği
-            {activeTab === "landing" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d86c6c]" />
-            )}
+            Assessment
           </button>
           <button
             onClick={() => setActiveTab("horizon")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "horizon"
-                ? "text-[#d86c6c] font-semibold"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 cursor-pointer ${activeTab === "horizon"
+              ? "border-[#0F172A] text-[#0F172A] bg-white rounded-t-xl"
+              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            Ufuk & Efemeris
-            {activeTab === "horizon" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d86c6c]" />
-            )}
+            Ephemeris
           </button>
           <button
-            onClick={() => setActiveTab("base")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "base"
-                ? "text-[#d86c6c] font-semibold"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            onClick={() => setActiveTab("power")}
+            className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 cursor-pointer ${activeTab === "power"
+              ? "border-[#0F172A] text-[#0F172A] bg-white rounded-t-xl"
+              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            Üs & Enerji
-            {activeTab === "base" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d86c6c]" />
-            )}
+            Power & Comms
           </button>
           <button
-            onClick={() => setActiveTab("criteria")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "criteria"
-                ? "text-[#d86c6c] font-semibold"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            onClick={() => setActiveTab("sources")}
+            className={`flex-1 py-2 text-xs font-semibold transition-colors border-b-2 cursor-pointer ${activeTab === "sources"
+              ? "border-[#0F172A] text-[#0F172A] bg-white rounded-t-xl"
+              : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            Kriterler
-            {activeTab === "criteria" && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#d86c6c]" />
-            )}
+            Data Sources
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Vehicle Profile Selector */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-[#f4f4f6] block">
-              İniş Aracı Profili
-            </label>
-            <select
-              value={activeLander.id}
-              onChange={(e) => {
-                const l = LANDER_PRESETS.find((x) => x.id === e.target.value);
-                if (l) setActiveLander(l);
-              }}
-              className="w-full bg-[#121317] border border-[#282a33] rounded-xl px-3 py-2 text-xs text-[#f4f4f6] font-medium focus:outline-none focus:border-[#d86c6c] cursor-pointer"
-            >
-              {LANDER_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (Maks. {p.maxSlopeDeg}°)
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Tab Content Body */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-[#0F172A] scrollbar-thin">
 
-          {/* Dispersion Footprint Radius Slider */}
-          <div className="space-y-1 bg-[#121317] p-3 rounded-2xl border border-[#282a33]">
-            <div className="flex justify-between text-xs font-medium text-[#f4f4f6]">
-              <span>Analiz Alanı Çapı</span>
-              <span className="text-[#d86c6c] font-bold font-mono">{footprintRadiusKm * 2} km</span>
-            </div>
-            <input
-              type="range"
-              min="0.5"
-              max="5.0"
-              step="0.5"
-              value={footprintRadiusKm}
-              onChange={(e) => setFootprintRadiusKm(Number(e.target.value))}
-              className="w-full accent-[#d86c6c] h-1.5 bg-[#22242c] rounded-lg cursor-pointer"
-            />
-          </div>
-
-          {/* Tab 1: Landing Safety (Hard Constraints & Topography) */}
+          {/* TAB 1: LANDING ASSESSMENT & HARD CONSTRAINTS */}
           {activeTab === "landing" && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#f4f4f6] uppercase tracking-wider">
-                  Uçuş Güvenlik Kuralları (GO / NO-GO)
-                </span>
-                <span className="text-[10px] font-mono text-[#9496a1]">NASA LRO LOLA</span>
+            <div className="space-y-4">
+
+              {/* Lander Configuration Selector */}
+              <div className="bg-[#F8FAFC] rounded-2xl p-3 border border-[#E2E8F0] space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-[#64748B]">Spacecraft Profile:</span>
+                  <span className="text-[#C2410C] font-bold">{activeLander.category}</span>
+                </div>
+                <select
+                  value={activeLander.id}
+                  onChange={(e) => {
+                    const found = LANDER_PRESETS.find((l) => l.id === e.target.value);
+                    if (found) setActiveLander(found);
+                  }}
+                  className="w-full bg-white border border-[#CBD5E1] rounded-xl px-3 py-2 text-xs text-[#0F172A] focus:outline-none focus:border-[#0F172A] cursor-pointer"
+                >
+                  {LANDER_PRESETS.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name} (Max Slope: {l.maxSlopeDeg}°)
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="space-y-2">
-                {assessment.hardConstraints.map((c) => (
-                  <div
-                    key={c.id}
-                    className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] flex items-start gap-2.5"
-                  >
-                    {c.status === "pass" ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#34c759] mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-[#d86c6c] mt-0.5 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
+              {/* Hard Constraints Checklist */}
+              <div>
+                <div className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                  Go / No-Go Hard Constraints
+                </div>
+                <div className="space-y-2">
+                  {assessment.hardConstraints.map((hc) => (
+                    <div
+                      key={hc.id}
+                      className={`p-3 rounded-2xl border flex flex-col gap-1.5 ${hc.status === "pass"
+                        ? "bg-[#DCFCE7]/40 border-[#BBF7D0]"
+                        : hc.status === "caution"
+                          ? "bg-[#FEF3C7]/40 border-[#FDE68A]"
+                          : "bg-[#FEE2E2]/40 border-[#FECACA]"
+                        }`}
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-[#f4f4f6]">{c.label}</span>
+                        <span className="font-bold text-[#0F172A] text-xs">{hc.label}</span>
                         <span
-                          className={`text-[10px] font-bold uppercase ${
-                            c.status === "pass" ? "text-[#34c759]" : "text-[#d86c6c]"
-                          }`}
+                          className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${hc.status === "pass"
+                            ? "bg-[#15803d] text-white"
+                            : hc.status === "caution"
+                              ? "bg-[#B45309] text-white"
+                              : "bg-[#B91C1C] text-white"
+                            }`}
                         >
-                          {c.status === "pass" ? "GO" : "NO-GO"}
+                          {hc.status}
                         </span>
                       </div>
-                      <div className="text-[11px] text-[#9496a1] mt-0.5 font-mono">
-                        Ölçülen: {c.measured} · Eşik: {c.threshold}
-                      </div>
-                      <div className="text-[10px] text-[#9496a1] mt-1 leading-snug">
-                        {c.detail}
+                      <div className="flex justify-between text-xs text-[#64748B]">
+                        <span>Measured: <strong className="text-[#0F172A]">{hc.measured}</strong></span>
+                        <span>Limit: {hc.threshold}</span>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* MCDA Criteria Breakdown */}
+              <div>
+                <div className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                  MCDA Quantitative Criteria
+                </div>
+                <div className="space-y-2">
+                  {assessment.criteria.map((cr) => (
+                    <div key={cr.id} className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#0F172A]">{cr.name}</span>
+                        <span className="font-mono font-bold text-[#0F172A]">{cr.score}/100</span>
+                      </div>
+                      <div className="w-full bg-[#E2E8F0] rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full bg-[#0F172A] rounded-full"
+                          style={{ width: `${cr.score}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Tab 2: Horizon & Ephemeris */}
+          {/* TAB 2: EPHEMERIS & SUN/EARTH POSITIONING */}
           {activeTab === "horizon" && (
-            <div className="space-y-3 animate-fade-in text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#f4f4f6] uppercase tracking-wider">
-                  Ufuk Çizgisi & Efemeris Durumu
+            <div className="space-y-3.5">
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-2.5">
+                <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider block">
+                  Celestial Vectors at Horizon
                 </span>
-                <span className="text-[10px] font-mono text-[#9496a1]">DE440 / LOLA</span>
-              </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 bg-white rounded-xl border border-[#E2E8F0]">
+                    <div className="text-[#64748B] text-xs font-medium">Sun Elevation</div>
+                    <div className="text-sm font-bold text-[#B45309] font-mono">
+                      {ephemeris.sunElevationDeg > 0 ? `+${ephemeris.sunElevationDeg}°` : `${ephemeris.sunElevationDeg}°`}
+                    </div>
+                  </div>
 
-              {/* Sun Position */}
-              <div className="p-3.5 rounded-2xl bg-[#121317] border border-[#282a33] space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sun className="w-4 h-4 text-[#ff9f0a] fill-[#ff9f0a]" />
-                    <span className="font-semibold text-[#f4f4f6]">Güneş Ufuk Açısı (Elevation)</span>
+                  <div className="p-2.5 bg-white rounded-xl border border-[#E2E8F0]">
+                    <div className="text-[#64748B] text-xs font-medium">Sun Azimuth</div>
+                    <div className="text-sm font-bold text-[#0F172A] font-mono">
+                      {ephemeris.sunAzimuthDeg}°
+                    </div>
                   </div>
-                  <span className="font-mono font-bold text-[#f4f4f6]">
-                    {ephemeris.sunElevationDeg > 0 ? `+${ephemeris.sunElevationDeg}°` : `${ephemeris.sunElevationDeg}°`}
-                  </span>
-                </div>
-                <div className="flex justify-between text-[11px] text-[#9496a1]">
-                  <span>Azimut Açısı:</span>
-                  <span className="font-mono text-[#f4f4f6]">{ephemeris.sunAzimuthDeg}°</span>
-                </div>
-                <div className="flex justify-between text-[11px] text-[#9496a1]">
-                  <span>Gün Batımına Kalan Süre:</span>
-                  <span className="font-mono font-bold text-[#f4f4f6]">
-                    {ephemeris.isSunVisible ? `${ephemeris.timeToSunsetHours} saat` : "Karanlık (Ay Gecesi)"}
-                  </span>
-                </div>
-                <div className="space-y-1 pt-1">
-                  <div className="flex justify-between text-[10px] text-[#9496a1]">
-                    <span>Güneş Güç Potansiyeli</span>
-                    <span className="font-bold text-[#f4f4f6]">%{ephemeris.solarPowerPotentialPct}</span>
+
+                  <div className="p-2.5 bg-white rounded-xl border border-[#E2E8F0]">
+                    <div className="text-[#64748B] text-xs font-medium">Earth Elevation</div>
+                    <div className="text-sm font-bold text-[#0F172A] font-mono">
+                      {ephemeris.earthElevationDeg > 0 ? `+${ephemeris.earthElevationDeg}°` : `${ephemeris.earthElevationDeg}°`}
+                    </div>
                   </div>
-                  <div className="w-full bg-[#22242c] h-1.5 rounded-full overflow-hidden border border-[#282a33]">
-                    <div
-                      className="bg-[#ff9f0a] h-full rounded-full"
-                      style={{ width: `${ephemeris.solarPowerPotentialPct}%` }}
-                    />
+
+                  <div className="p-2.5 bg-white rounded-xl border border-[#E2E8F0]">
+                    <div className="text-[#64748B] text-xs font-medium">Earth Azimuth</div>
+                    <div className="text-sm font-bold text-[#0F172A] font-mono">
+                      {ephemeris.earthAzimuthDeg}°
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Earth Position */}
-              <div className="p-3.5 rounded-2xl bg-[#121317] border border-[#282a33] space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-[#4a9eff] fill-[#4a9eff]" />
-                    <span className="font-semibold text-[#f4f4f6]">Dünya Ufuk Açısı (Elevation)</span>
-                  </div>
-                  <span className="font-mono font-bold text-[#f4f4f6]">
-                    {ephemeris.earthElevationDeg > 0 ? `+${ephemeris.earthElevationDeg}°` : `${ephemeris.earthElevationDeg}°`}
+              {/* Illumination & Visibility Countdown */}
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-2">
+                <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider block">
+                  Event Windows
+                </span>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#64748B] font-medium">Time to Sunset:</span>
+                  <span className="font-bold text-[#0F172A]">
+                    {ephemeris.isSunVisible ? `${ephemeris.timeToSunsetHours} hours` : "Night Condition"}
                   </span>
                 </div>
-                <div className="flex justify-between text-[11px] text-[#9496a1]">
-                  <span>Azimut Açısı:</span>
-                  <span className="font-mono text-[#f4f4f6]">{ephemeris.earthAzimuthDeg}°</span>
-                </div>
-                <div className="flex justify-between text-[11px] text-[#9496a1]">
-                  <span>Doğrudan DTE İletişim:</span>
-                  <span className={`font-mono font-bold ${ephemeris.isEarthVisible ? "text-[#34c759]" : "text-[#d86c6c]"}`}>
-                    {ephemeris.isEarthVisible ? "Aktif (+7.8 dB Marj)" : "Görüş Yok (Röle Zorunlu)"}
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#64748B] font-medium">Earth Visibility:</span>
+                  <span className="font-bold text-[#0F172A]">
+                    {ephemeris.isEarthVisible ? "Permanent LOS (Tidally Locked)" : "Occluded (Far Side / Rim)"}
                   </span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Tab 3: Lunar Base & Resources */}
-          {activeTab === "base" && (
-            <div className="space-y-3 animate-fade-in text-xs">
-              <div className="p-3.5 rounded-2xl bg-[#121317] border border-[#282a33] space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-[#9496a1]">Yıllık Güneşlenme Uptime:</span>
-                  <span className="font-bold text-[#f4f4f6] font-mono">%{assessment.solarUptimePct}</span>
+          {/* TAB 3: POWER & COMMS (NASA Challenge Requirements D & E) */}
+          {activeTab === "power" && (
+            <div className="space-y-3.5">
+
+              {/* Solar Power Model */}
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-2.5">
+                <div className="flex items-center gap-1.5 text-xs text-[#0F172A] font-bold">
+                  <Zap className="w-4 h-4 text-[#B45309]" />
+                  <span>Solar Energy Generation Model</span>
                 </div>
-                <div className="w-full bg-[#22242c] h-1.5 rounded-full overflow-hidden border border-[#282a33]">
-                  <div
-                    className="bg-[#d86c6c] h-full rounded-full"
-                    style={{ width: `${assessment.solarUptimePct}%` }}
-                  />
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-2 bg-white rounded-xl border border-[#E2E8F0]">
+                    <span className="text-xs text-[#64748B] block">Polar Vertical</span>
+                    <span className="font-bold text-[#0F172A] text-sm">{ephemeris.panelOrientationWatts?.vertical} W</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-xl border border-[#E2E8F0]">
+                    <span className="text-xs text-[#64748B] block">Flat Surface</span>
+                    <span className="font-bold text-[#0F172A] text-sm">{ephemeris.panelOrientationWatts?.horizontal} W</span>
+                  </div>
+                  <div className="p-2 bg-white rounded-xl border border-[#E2E8F0]">
+                    <span className="text-xs text-[#64748B] block">2-Axis Tracking</span>
+                    <span className="font-bold text-[#C2410C] text-sm">{ephemeris.panelOrientationWatts?.tracking} W</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-[#9496a1]">
-                  Güney Kutup sırtları yıllık %80-90 güneşlenme sağlayarak 14 günlük gece soğuğundan korur.
-                </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[#121317] border border-[#282a33] space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-[#9496a1]">Su Buzu / PSR Yakınlığı:</span>
-                  <span className="font-bold text-[#4a9eff] font-mono">%{assessment.waterIceProbabilityPct} İndeks</span>
+              {/* Direct-to-Earth (DTE) RF Communication */}
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-[#0F172A] font-bold">
+                  <Radio className="w-4 h-4 text-[#0F172A]" />
+                  <span>Direct-to-Earth (DTE) Telecommunications</span>
                 </div>
-                <div className="w-full bg-[#22242c] h-1.5 rounded-full overflow-hidden border border-[#282a33]">
-                  <div
-                    className="bg-[#4a9eff] h-full rounded-full"
-                    style={{ width: `${assessment.waterIceProbabilityPct}%` }}
-                  />
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B] font-medium">Geometric Line-of-Sight:</span>
+                    <span className={ephemeris.isGeometricLOS ? "text-[#15803d] font-bold" : "text-[#B91C1C] font-bold"}>
+                      {ephemeris.isGeometricLOS ? "Clear Horizon" : "Occluded"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B] font-medium">DSN Link Margin (X-band):</span>
+                    <span className="font-mono font-bold text-[#0F172A]">
+                      {(ephemeris.rfLinkMarginDb ?? 0) > 0 ? `+${ephemeris.rfLinkMarginDb} dB` : `${ephemeris.rfLinkMarginDb ?? 0} dB`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#64748B] font-medium">Relay Satellite Mandate:</span>
+                    <span className="text-[#64748B]">
+                      {ephemeris.isCommsViable ? "Optional / Backup" : "Mandatory (e.g. Lunar Pathfinder)"}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-[#9496a1]">
-                  LRO LEND nötron spektrometresi ile kalıcı gölgeli krater tabanlarında tespit edilen hidrojen yoğunluğu.
-                </p>
               </div>
             </div>
           )}
 
-          {/* Tab 4: MCDA Criteria Matrix */}
-          {activeTab === "criteria" && (
-            <div className="space-y-2 animate-fade-in text-xs">
-              {assessment.criteria.map((c) => (
-                <div
-                  key={c.id}
-                  className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] flex items-center justify-between"
-                >
+          {/* TAB 4: SCIENTIFIC TRANSPARENCY & DATA SOURCES */}
+          {activeTab === "sources" && (
+            <div className="space-y-3">
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-[#0F172A] font-bold">
+                  <BookOpen className="w-4 h-4 text-[#0F172A]" />
+                  <span>NASA Planetary Data System Sources</span>
+                </div>
+                <div className="space-y-2 text-xs text-[#64748B]">
                   <div>
-                    <div className="font-semibold text-[#f4f4f6]">{c.name}</div>
-                    <div className="text-[10px] text-[#9496a1]">{c.instrument} · {c.value}</div>
+                    <strong className="text-[#0F172A]">Topography & Slopes:</strong> LRO LOLA Gridded Data Records (LDEM_1024, 30m/px resolution).
                   </div>
-                  <div className="text-right">
-                    <span className="font-bold text-[#d86c6c] font-mono">{c.score} / 100</span>
-                    <span className="block text-[9px] text-[#9496a1] uppercase">{c.confidence}</span>
+                  <div>
+                    <strong className="text-[#0F172A]">Surface Morphology:</strong> LROC Wide Angle Camera (WAC) 100m/px Global Basemap.
+                  </div>
+                  <div>
+                    <strong className="text-[#0F172A]">Volatiles / Hydrogen:</strong> LRO LEND Epithermal Neutron Flux (suppression index in PSRs).
+                  </div>
+                  <div>
+                    <strong className="text-[#0F172A]">Celestial Ephemeris:</strong> NASA JPL Horizons / SPICE de440s planetary ephemeris.
                   </div>
                 </div>
-              ))}
+              </div>
+
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] space-y-1.5 text-xs text-[#64748B]">
+                <div className="font-bold text-[#0F172A]">Coordinate Reference Frame</div>
+                <div>Lunar Mean Earth / Polar Axis (MOON_ME) per IAU/IAG Working Group Cartographic Coordinates (2015).</div>
+                <div className="font-bold text-[#0F172A] pt-1">Time Standard</div>
+                <div>Coordinated Universal Time (UTC) and Barycentric Dynamical Time (TDB).</div>
+              </div>
+
+              <div className="p-3.5 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] text-xs text-[#64748B] leading-relaxed">
+                <strong>Notice:</strong> This analytical assessment platform is created for the NASA Space Apps Challenge 2026. Scientific metrics are computed using validated peer-reviewed models. Direct mission deployment requires certified Terrain Relative Navigation (TRN) validation.
+              </div>
             </div>
           )}
         </div>
@@ -461,3 +468,5 @@ export const GoogleSiteCard: React.FC<GoogleSiteCardProps> = ({
     </div>
   );
 };
+
+export default GoogleSiteCard;

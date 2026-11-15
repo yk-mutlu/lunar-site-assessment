@@ -32,7 +32,7 @@ export function computeSiteScores(
     sunAngle: number;
     illumPct: number;
     radiationScore: number;
-    dustRisk: 'Düşük' | 'Orta' | 'Yüksek';
+    dustRisk: 'Low' | 'Moderate' | 'High';
     earthLOS: boolean;
     solarEff: number;
     waterIceDistKm: number;
@@ -49,39 +49,39 @@ export function computeSiteScores(
 
   const terrainSlope: CriterionScore = {
     id: 'slope',
-    name: 'Zemin Eğimi',
+    name: 'Terrain Slope',
     score: slopeScore,
     weight: SCORING_WEIGHTS.terrainSlope,
-    measuredValueStr: `Ortalama: ${siteRaw.slope.toFixed(1)}° (Maks: ${siteRaw.maxSlope.toFixed(1)}°)`,
-    formulaRationale: `Ortalama eğim ${siteRaw.slope.toFixed(1)}°, araç eşiği ${slopeThreshold.toFixed(1)}° → ${slopeScore}/10`,
+    measuredValueStr: `Mean: ${siteRaw.slope.toFixed(1)}° (Max: ${siteRaw.maxSlope.toFixed(1)}°)`,
+    formulaRationale: `Mean slope ${siteRaw.slope.toFixed(1)}°, vehicle limit ${slopeThreshold.toFixed(1)}° → ${slopeScore}/10`,
     isProxy: false,
-    explanation: 'LOLA DEM verisinden türetilen yerel eğim. Aracın devrilme eşiği aşıldığında statik denge bozulur.',
+    explanation: 'Derived from LOLA DEM elevation. Static stability threshold to prevent lander tip-over.',
   };
 
   // 2. Surface Roughness & Boulders
   const roughnessScore = piecewiseScore(siteRaw.roughness, 0.08, 0.45);
   const surfaceRoughness: CriterionScore = {
     id: 'roughness',
-    name: 'Yüzey Pürüzlülüğü ve Kaya Yoğunluğu',
+    name: 'Surface Roughness & Boulders',
     score: roughnessScore,
     weight: SCORING_WEIGHTS.surfaceRoughness,
-    measuredValueStr: `${siteRaw.boulderDensity.toFixed(2)} kaya/m² (Ra: ${siteRaw.roughness.toFixed(2)}m)`,
-    formulaRationale: `Ra ${siteRaw.roughness.toFixed(2)}m, yoğunluk ${siteRaw.boulderDensity.toFixed(2)}/m² → ${roughnessScore}/10`,
+    measuredValueStr: `${siteRaw.boulderDensity.toFixed(2)} boulders/m² (Ra: ${siteRaw.roughness.toFixed(2)}m)`,
+    formulaRationale: `Ra ${siteRaw.roughness.toFixed(2)}m, boulder density ${siteRaw.boulderDensity.toFixed(2)}/m² → ${roughnessScore}/10`,
     isProxy: false,
-    explanation: 'LROC NAC sub-meter kaya dağılımı. 45 cm üzerindeki bloklar motor nozülü veya ayak hasarına neden olur.',
+    explanation: 'LROC NAC sub-meter distribution. Boulders >45cm risk engine nozzle or landing gear clearance failure.',
   };
 
   // 3. Crater Hazard
   const craterScore = piecewiseScore(siteRaw.craterDist, 250, 20);
   const craterHazard: CriterionScore = {
     id: 'crater',
-    name: 'Krater Tehlikesi',
+    name: 'Crater Proximity Hazard',
     score: craterScore,
     weight: SCORING_WEIGHTS.craterHazard,
-    measuredValueStr: `En yakın rim: ${Math.round(siteRaw.craterDist)} m (Çap: ${Math.round(siteRaw.craterDiam)} m)`,
-    formulaRationale: `En yakın krater ${Math.round(siteRaw.craterDist)} m mesafede, çap ${Math.round(siteRaw.craterDiam)} m → ${craterScore}/10`,
+    measuredValueStr: `Nearest rim: ${Math.round(siteRaw.craterDist)} m (Diam: ${Math.round(siteRaw.craterDiam)} m)`,
+    formulaRationale: `Nearest crater ${Math.round(siteRaw.craterDist)} m away, diameter ${Math.round(siteRaw.craterDiam)} m → ${craterScore}/10`,
     isProxy: false,
-    explanation: 'Darbe kraterlerinin dik iç yamaçları radar altimetre ölçümlerinde sahte kilitlenmelere yol açabilir.',
+    explanation: 'Steep crater walls risk radar altimeter lock discontinuities and hazard detection false positives.',
   };
 
   // 4. Flat Safe Area Diameter
@@ -89,92 +89,92 @@ export function computeSiteScores(
   const flatScore = piecewiseScore(siteRaw.flatDiameter, requiredDiameter * 2.5, requiredDiameter * 0.7);
   const flatSafeArea: CriterionScore = {
     id: 'flat_area',
-    name: 'Düz Güvenli Alan Çapı',
+    name: 'Continuous Flat Area Diameter',
     score: flatScore,
     weight: SCORING_WEIGHTS.flatSafeArea,
-    measuredValueStr: `Çap: ${Math.round(siteRaw.flatDiameter)} metre`,
-    formulaRationale: `Mesafe dönüşümü ile hesaplanan düz koridor ${Math.round(siteRaw.flatDiameter)} m (Gerekli: ${requiredDiameter} m) → ${flatScore}/10`,
+    measuredValueStr: `Diameter: ${Math.round(siteRaw.flatDiameter)} m`,
+    formulaRationale: `Distance-transform flat corridor ${Math.round(siteRaw.flatDiameter)} m (Required: ${requiredDiameter} m) → ${flatScore}/10`,
     isProxy: false,
-    explanation: 'İniş dağılım elipsi (landing dispersion ellipse) toleransı için gereken kesintisiz düz arazi alanı.',
+    explanation: 'Required obstacle-free diameter to absorb 3-sigma landing dispersion ellipse errors.',
   };
 
   // 5. Illumination
   const illumScore = piecewiseScore(siteRaw.illumPct, 92, 40);
   const illumination: CriterionScore = {
     id: 'illumination',
-    name: 'Aydınlanma ve Işıklandırma',
+    name: 'Solar Illumination Uptime',
     score: illumScore,
     weight: SCORING_WEIGHTS.illumination,
-    measuredValueStr: `Yıllık Güneşlenme: %${siteRaw.illumPct.toFixed(0)} (Açı: ${siteRaw.sunAngle.toFixed(1)}°)`,
-    formulaRationale: `Güneş açısı ${siteRaw.sunAngle.toFixed(1)}°, aydınlanma süresi %${siteRaw.illumPct.toFixed(0)} → ${illumScore}/10`,
+    measuredValueStr: `Annual Illumination: ${siteRaw.illumPct.toFixed(0)}% (Grazing Angle: ${siteRaw.sunAngle.toFixed(1)}°)`,
+    formulaRationale: `Grazing sun angle ${siteRaw.sunAngle.toFixed(1)}°, annual uptime ${siteRaw.illumPct.toFixed(0)}% → ${illumScore}/10`,
     isProxy: false,
-    explanation: 'Kutup bölgelerinde düşük geliş açılı güneş uzun gölgeler yaratır; optik iniş sensörleri için yeterli kontrast gerekir.',
+    explanation: 'Polar grazing sun elevation creates elongated shadows; ensures contrast for optical descent navigation.',
   };
 
   // 6. Space Weather & Environment
-  const dustMultiplier = siteRaw.dustRisk === 'Düşük' ? 1.0 : siteRaw.dustRisk === 'Orta' ? 0.8 : 0.5;
+  const dustMultiplier = siteRaw.dustRisk === 'Low' ? 1.0 : siteRaw.dustRisk === 'Moderate' ? 0.8 : 0.5;
   const weatherScore = Number((siteRaw.radiationScore * dustMultiplier).toFixed(1));
   const spaceWeather: CriterionScore = {
     id: 'weather',
-    name: 'Uzay Havası ve Çevre Koşulları',
+    name: 'Space Weather & Environment',
     score: weatherScore,
     weight: SCORING_WEIGHTS.spaceWeather,
-    measuredValueStr: `Toz Riski: ${siteRaw.dustRisk} • Radyasyon Puanı: ${siteRaw.radiationScore.toFixed(1)}/10`,
-    formulaRationale: `CRaTER radyasyon modeli ${siteRaw.radiationScore.toFixed(1)} * toz katsayısı ${dustMultiplier} → ${weatherScore}/10`,
+    measuredValueStr: `Dust Levitation: ${siteRaw.dustRisk} • Radiation Index: ${siteRaw.radiationScore.toFixed(1)}/10`,
+    formulaRationale: `CRaTER radiation proxy ${siteRaw.radiationScore.toFixed(1)} * dust factor ${dustMultiplier} → ${weatherScore}/10`,
     isProxy: true,
-    explanation: 'Atmosfersiz ortamda güneş fırtınası proton akısı ve elektrostatik regolit toz kalkması riski (Proxy model).',
+    explanation: 'Solar particle events (SPE) and electrostatic regolith dust adhesion risk without atmospheric shielding.',
   };
 
   // 7. Earth Communication (LOS)
   const earthScore = siteRaw.earthLOS ? 9.8 : 2.5;
   const earthCommunication: CriterionScore = {
     id: 'comms',
-    name: 'Dünya İletişimi (Direct DSN Link)',
+    name: 'Earth Communication (Direct DSN Link)',
     score: earthScore,
     weight: SCORING_WEIGHTS.earthCommunication,
-    measuredValueStr: siteRaw.earthLOS ? 'Doğrudan DSN Görüşü (LOS Açık)' : 'Ay Ufku Engeli (Röle Zorunlu)',
-    formulaRationale: `Dünya doğrudan görüş hattı: ${siteRaw.earthLOS ? 'EVET (9.8/10)' : 'HAYIR (2.5/10 - Röle İhtiyacı)'}`,
+    measuredValueStr: siteRaw.earthLOS ? 'Direct DSN Visibility (LOS Unobstructed)' : 'Lunar Horizon Occluded (Relay Mandatory)',
+    formulaRationale: `Direct-to-Earth geometric LOS: ${siteRaw.earthLOS ? 'YES (9.8/10)' : 'NO (2.5/10 - Relay Required)'}`,
     isProxy: false,
-    explanation: 'NASA Deep Space Network (DSN) ile doğrudan X/Ka bandı telemetri hattı. Arka yüzde röle uydusu zorunludur.',
+    explanation: 'Direct X/Ka-band telemetry with NASA Deep Space Network. Farside or deep craters require orbital relay.',
   };
 
   // 8. Energy Potential
   const energyScore = piecewiseScore(siteRaw.solarEff, 90, 30);
   const energyPotential: CriterionScore = {
     id: 'energy',
-    name: 'Enerji Potansiyeli',
+    name: 'Solar Energy Potential',
     score: energyScore,
     weight: SCORING_WEIGHTS.energyPotential,
-    measuredValueStr: `Fotovoltaik Verim: %${siteRaw.solarEff.toFixed(0)}`,
-    formulaRationale: `Güneş paneli insidans verimi %${siteRaw.solarEff.toFixed(0)} → ${energyScore}/10`,
+    measuredValueStr: `Photovoltaic Efficiency: ${siteRaw.solarEff.toFixed(0)}%`,
+    formulaRationale: `Solar incidence yield ${siteRaw.solarEff.toFixed(0)}% → ${energyScore}/10`,
     isProxy: true,
-    explanation: 'Dikey fotovoltaik panellerin batarya şarjı ve kriyojenik gece hayatta kalma kapasitesi.',
+    explanation: 'Vertical photovoltaic array generation to sustain battery reserves across cryogenic lunar night.',
   };
 
   // 9. Scientific Value
   const scienceScore = piecewiseScore(siteRaw.waterIceDistKm, 1.2, 18.0);
   const scientificValue: CriterionScore = {
     id: 'science',
-    name: 'Bilimsel Değer ve Su Buzu',
+    name: 'Scientific Value & Water Ice Access',
     score: scienceScore,
     weight: SCORING_WEIGHTS.scientificValue,
-    measuredValueStr: `Kalıcı Gölgeli Su Buzuna Mesafe: ${siteRaw.waterIceDistKm.toFixed(1)} km`,
-    formulaRationale: `PSR soğuk kapanına uzaklık ${siteRaw.waterIceDistKm.toFixed(1)} km → ${scienceScore}/10`,
+    measuredValueStr: `Distance to PSR Cold-Trap Ice: ${siteRaw.waterIceDistKm.toFixed(1)} km`,
+    formulaRationale: `Proximity to volatile trap ${siteRaw.waterIceDistKm.toFixed(1)} km → ${scienceScore}/10`,
     isProxy: false,
-    explanation: 'M3 ve Diviner spektrometre tespitli uçucu hidrojen/su buzu kaynaklarına gezginle (rover) erişilebilirlik.',
+    explanation: 'Accessibility for autonomous rovers to sample epithermal neutron and hydrogen-rich deposits.',
   };
 
   // 10. Route and Accessibility
   const routeScore = piecewiseScore(siteRaw.approachAngle, 12, 3);
   const routeAccessibility: CriterionScore = {
     id: 'route',
-    name: 'Rota ve Yaklaşma Koridoru',
+    name: 'Approach & Abort Corridor',
     score: routeScore,
     weight: SCORING_WEIGHTS.routeAccessibility,
-    measuredValueStr: `Engelsiz Alçalma Açısı: ${siteRaw.approachAngle.toFixed(1)}°`,
-    formulaRationale: `Yaklaşma hattı arazi temizliği ${siteRaw.approachAngle.toFixed(1)}° → ${routeScore}/10`,
+    measuredValueStr: `Clear Descent Clearance: ${siteRaw.approachAngle.toFixed(1)}°`,
+    formulaRationale: `Approach trajectory obstacle margin ${siteRaw.approachAngle.toFixed(1)}° → ${routeScore}/10`,
     isProxy: true,
-    explanation: 'Yörüngeden alçalma ve iptal (abort) manevraları için yüksek masif ve krater duvarlarından arınmış koridor.',
+    explanation: 'Hazard-free approach vector clear of high massifs or steep crater rim shadow occlusions.',
   };
 
   return {
@@ -194,7 +194,7 @@ export function computeSiteScores(
 // ── Overall Composite Score Calculator ────────────────────────────────
 export function calculateOverallScore(scores: SiteScores): {
   overall: number;
-  label: 'Mükemmel' | 'Çok İyi' | 'Orta' | 'Riskli' | 'Uygun Değil';
+  label: 'Optimal' | 'Highly Suitable' | 'Moderate' | 'Risky' | 'Unsuitable';
 } {
   let weightedSum = 0;
   let totalWeight = 0;
@@ -206,12 +206,12 @@ export function calculateOverallScore(scores: SiteScores): {
 
   const overall = Number((weightedSum / (totalWeight || 1)).toFixed(1));
 
-  let label: 'Mükemmel' | 'Çok İyi' | 'Orta' | 'Riskli' | 'Uygun Değil';
-  if (overall >= 8.5) label = 'Mükemmel';
-  else if (overall >= 7.2) label = 'Çok İyi';
-  else if (overall >= 5.5) label = 'Orta';
-  else if (overall >= 4.0) label = 'Riskli';
-  else label = 'Uygun Değil';
+  let label: 'Optimal' | 'Highly Suitable' | 'Moderate' | 'Risky' | 'Unsuitable';
+  if (overall >= 8.5) label = 'Optimal';
+  else if (overall >= 7.2) label = 'Highly Suitable';
+  else if (overall >= 5.5) label = 'Moderate';
+  else if (overall >= 4.0) label = 'Risky';
+  else label = 'Unsuitable';
 
   return { overall, label };
 }
@@ -361,8 +361,8 @@ export function detectSafeLandingSites(
     const sunAngle = 4.5 + seedOffset * 11.0;
     const illumPct = Math.round(72 + seedOffset * 22);
     const radiationScore = Number((7.0 + seedOffset * 2.2).toFixed(1));
-    const dustRisk: 'Düşük' | 'Orta' | 'Yüksek' =
-      pt.slope < 4.0 ? 'Düşük' : pt.slope < 8.0 ? 'Orta' : 'Yüksek';
+    const dustRisk: 'Low' | 'Moderate' | 'High' =
+      pt.slope < 4.0 ? 'Low' : pt.slope < 8.0 ? 'Moderate' : 'High';
 
     // Earth LOS is true unless in a steep eastern ravine or far polar dip
     const earthLOS = pt.x > -120 && target.lat > -88;
@@ -429,7 +429,7 @@ export function detectSafeLandingSites(
       earthElevationDeg: Number((12 + seedOffset * 8).toFixed(1)),
       solarEfficiencyPct: solarEff,
       waterIceDistKm,
-      scientificInterest: 'Kratersel Darbe Breşleri & Plajiyoklaz Zenginliği',
+      scientificInterest: 'Impact Breccia & Anorthositic Plagioclase Beds',
       approachClearanceDeg: approachAngle,
       scores,
       overallScore: overall,

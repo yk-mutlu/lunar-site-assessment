@@ -41,7 +41,7 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       sender: "system",
-      text: `Gezegensel Karar Destek Asistanı devrede. ${selectedTarget.name} sahası için NASA LRO LOLA, Diviner ve LEND arşivleri yüklendi. PC'nizdeki yerel Ollama modeli üzerinden çalışıyorum. Sorunuzu yöneltebilirsiniz.`,
+      text: `Planetary Decision Support AI is online. NASA LRO LOLA, Diviner, and LEND archival data loaded for ${selectedTarget.name}. Connected via local Ollama inference. How can I assist your site evaluation?`,
       timestamp: "12:00",
     },
   ]);
@@ -78,10 +78,10 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
   const assessment = computeSiteAssessment(selectedTarget, activeLander, footprintRadiusKm);
 
   const quickQueries = [
-    "Bu iniş aracının eğim stabilite sınırını ve devrilme riskini analiz et",
-    "LEND nötron verileri ile su buzu tespiti nasıl doğrulanır?",
-    "Ay'ın kütleçekim kilitlenmesi (tidal lock) ve DSN iletişim kör noktaları nelerdir?",
-    "Güney Kutup sırtları ile ekvatoral iniş alanlarının aydınlatma farkı nedir?",
+    "Analyze slope stability margins and vehicle tip-over risk",
+    "How is water ice presence verified using LEND epithermal neutrons?",
+    "Explain lunar tidal lock and DSN direct-to-Earth communication line-of-sight",
+    "Compare illumination stability between South Pole ridges and equatorial plains",
   ];
 
   const handleSend = async (text?: string) => {
@@ -125,11 +125,11 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
       });
 
       if (!res.ok) {
-        throw new Error(`Ollama yanıt vermedi (Kod: ${res.status})`);
+        throw new Error(`Ollama model response failed (HTTP ${res.status})`);
       }
 
       const data = await res.json();
-      const botReply = data.reply || "Model boş yanıt döndürdü.";
+      const botReply = data.reply || "No response received from local model.";
 
       setMessages((prev) => [
         ...prev,
@@ -144,7 +144,7 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
         ...prev,
         {
           sender: "system",
-          text: `[Ollama Bağlantı Uyarısı]: ${err.message}. PC'nizde Ollama'nın çalıştığından ('ollama serve') emin olun.`,
+          text: `[Ollama Advisory Notice]: ${err.message}. Ensure Ollama is running locally ('ollama serve').`,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -154,33 +154,33 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in select-none">
-      <div className="w-full max-w-2xl bg-[#181a20] border border-[#282a33] rounded-3xl shadow-tesla flex flex-col h-[560px] overflow-hidden font-sans text-[#f4f4f6]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in select-none">
+      <div className="w-full max-w-2xl bg-white border border-[#E8EAED] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.18)] flex flex-col h-[560px] overflow-hidden font-sans text-[#202124]">
         {/* Header */}
-        <div className="h-16 px-5 border-b border-[#282a33] flex items-center justify-between bg-[#14151a]">
+        <div className="h-16 px-5 border-b border-[#E8EAED] flex items-center justify-between bg-[#F8F9FA]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-[rgba(216,108,108,0.15)] flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[#d86c6c]" />
+            <div className="w-9 h-9 rounded-full bg-[#E8F0FE] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-[#1A73E8]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-sans text-sm font-semibold text-[#f4f4f6] block leading-tight">
-                  Gezegensel Bilimsel Danışman (Yerel Ollama LLM)
+                <span className="font-sans text-sm font-semibold text-[#202124] block leading-tight">
+                  Planetary Scientific Advisor (Local Ollama AI)
                 </span>
                 {ollamaStatus === "connected" ? (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-[#34c759] bg-[rgba(52,199,89,0.15)] px-2 py-0.5 rounded-full border border-[rgba(52,199,89,0.3)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] animate-pulse" />
-                    Ollama Aktif
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-[#137333] bg-[#E6F4EA] px-2 py-0.5 rounded-full border border-[#CEEAD6]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#34A853] animate-pulse" />
+                    Ollama Online
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-[10px] font-semibold text-[#ff9f0a] bg-[rgba(255,159,10,0.15)] px-2 py-0.5 rounded-full border border-[rgba(255,159,10,0.3)]">
-                    <AlertCircle className="w-3 h-3 text-[#ff9f0a]" />
-                    Ollama Bağlanıyor
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-[#B06000] bg-[#FEF7E0] px-2 py-0.5 rounded-full border border-[#FEEFC3]">
+                    <AlertCircle className="w-3 h-3 text-[#B06000]" />
+                    Connecting...
                   </span>
                 )}
               </div>
-              <span className="text-[11px] text-[#9496a1] font-sans">
-                NASA LRO & Diviner Arşivleri Doğrudan Yerel Yapay Zeka ile Eşleştirildi
+              <span className="text-[11px] text-[#5F6368] font-sans">
+                NASA LRO & Diviner Archival Metrics Connected to Local Neural Engine
               </span>
             </div>
           </div>
@@ -188,15 +188,15 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
           <div className="flex items-center gap-2">
             {/* Model Selector Dropdown */}
             {availableModels.length > 0 && (
-              <div className="flex items-center gap-1 bg-[#22242c] border border-[#282a33] rounded-full px-2.5 py-1 text-xs">
-                <Cpu className="w-3.5 h-3.5 text-[#9496a1]" />
+              <div className="flex items-center gap-1 bg-white border border-[#E8EAED] rounded-full px-2.5 py-1 text-xs shadow-sm">
+                <Cpu className="w-3.5 h-3.5 text-[#5F6368]" />
                 <select
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
-                  className="bg-transparent text-xs text-[#f4f4f6] font-medium focus:outline-none cursor-pointer"
+                  className="bg-transparent text-xs text-[#202124] font-medium focus:outline-none cursor-pointer"
                 >
                   {availableModels.map((m) => (
-                    <option key={m} value={m} className="bg-[#181a20] text-[#f4f4f6]">
+                    <option key={m} value={m} className="bg-white text-[#202124]">
                       {m}
                     </option>
                   ))}
@@ -206,47 +206,47 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#9496a1] hover:text-[#f4f4f6] hover:bg-[#22242c] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#5F6368] hover:text-[#202124] hover:bg-[#E8EAED] transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Scientific Disclaimers & Active Model Badge */}
-        <div className="px-5 py-2 bg-[#121317] border-b border-[#282a33] flex items-center justify-between text-xs font-sans text-[#9496a1]">
+        {/* Scientific Disclaimers & Active Target Banner */}
+        <div className="px-5 py-2 bg-[#F8F9FA] border-b border-[#E8EAED] flex items-center justify-between text-xs font-sans text-[#5F6368]">
           <div className="flex items-center gap-2">
-            <ShieldAlert className="w-3.5 h-3.5 text-[#d86c6c] flex-shrink-0" />
-            <span>Aktif Hedef: {selectedTarget.name} ({selectedTarget.lat.toFixed(2)}°, {selectedTarget.lng.toFixed(2)}°)</span>
+            <ShieldAlert className="w-3.5 h-3.5 text-[#1A73E8] flex-shrink-0" />
+            <span>Target: {selectedTarget.name} ({selectedTarget.lat.toFixed(2)}°, {selectedTarget.lng.toFixed(2)}°)</span>
           </div>
-          <span className="font-mono text-[11px] text-[#f4f4f6] font-semibold">
+          <span className="font-mono text-[11px] text-[#202124] font-semibold">
             Model: {selectedModel}
           </span>
         </div>
 
         {/* Message Thread */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3.5 font-sans text-xs bg-[#181a20]">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3.5 font-sans text-xs bg-[#FFFFFF]">
           {messages.map((m, i) => (
             <div
               key={i}
               className={`flex gap-3 ${m.sender === "user" ? "justify-end" : "justify-start"}`}
             >
               {m.sender === "system" && (
-                <div className="w-7 h-7 rounded-full bg-[rgba(216,108,108,0.15)] border border-[rgba(216,108,108,0.3)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Bot className="w-3.5 h-3.5 text-[#d86c6c]" />
+                <div className="w-7 h-7 rounded-full bg-[#E8F0FE] border border-[#D2E3FC] flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-[#1A73E8]" />
                 </div>
               )}
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-2.5 leading-relaxed shadow-sm ${
                   m.sender === "user"
-                    ? "bg-[#d86c6c] text-white"
-                    : "bg-[#121317] border border-[#282a33] text-[#f4f4f6]"
+                    ? "bg-[#1A73E8] text-white"
+                    : "bg-[#F8F9FA] border border-[#E8EAED] text-[#202124]"
                 }`}
               >
                 <p className="text-xs whitespace-pre-wrap">{m.text}</p>
                 <span
                   className={`block mt-1 text-[10px] text-right font-mono ${
-                    m.sender === "user" ? "text-white/80" : "text-[#9496a1]"
+                    m.sender === "user" ? "text-white/80" : "text-[#5F6368]"
                   }`}
                 >
                   {m.timestamp}
@@ -256,22 +256,22 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
           ))}
 
           {loading && (
-            <div className="flex items-center gap-2 text-xs font-sans text-[#f4f4f6] pl-10">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#d86c6c] animate-ping" />
-              <span className="font-medium text-[#d86c6c]">
-                Yerel model ({selectedModel}) gerçek zamanlı analiz üretiyor...
+            <div className="flex items-center gap-2 text-xs font-sans text-[#202124] pl-10">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#1A73E8] animate-ping" />
+              <span className="font-medium text-[#1A73E8]">
+                Local model ({selectedModel}) synthesizing scientific assessment...
               </span>
             </div>
           )}
         </div>
 
         {/* Quick query pills */}
-        <div className="px-4 py-2 border-t border-[#282a33] bg-[#14151a] flex gap-2 overflow-x-auto">
+        <div className="px-4 py-2 border-t border-[#E8EAED] bg-[#F8F9FA] flex gap-2 overflow-x-auto">
           {quickQueries.map((q, idx) => (
             <button
               key={idx}
               onClick={() => handleSend(q)}
-              className="text-[11px] font-sans whitespace-nowrap px-3 py-1 rounded-full bg-[#22242c] hover:bg-[#2c2f3a] text-[#9496a1] hover:text-[#f4f4f6] border border-[#282a33] transition-colors cursor-pointer"
+              className="text-[11px] font-sans whitespace-nowrap px-3 py-1 rounded-full bg-white hover:bg-[#F1F3F4] text-[#5F6368] hover:text-[#202124] border border-[#E8EAED] transition-colors cursor-pointer shadow-xs"
             >
               {q}
             </button>
@@ -284,20 +284,20 @@ export const ScientificAdvisorModal: React.FC<ScientificAdvisorModalProps> = ({
             e.preventDefault();
             handleSend();
           }}
-          className="p-3 border-t border-[#282a33] bg-[#14151a] flex items-center gap-2"
+          className="p-3 border-t border-[#E8EAED] bg-[#F8F9FA] flex items-center gap-2"
         >
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             disabled={loading}
-            placeholder="Ollama modeline iniş sahası, eğim, su buzu veya DSN bağlantısı hakkında soru sorun..."
-            className="flex-1 bg-[#121317] border border-[#282a33] rounded-full px-4 py-2 text-xs font-sans text-[#f4f4f6] placeholder-[#5c5e69] focus:outline-none focus:border-[#d86c6c]"
+            placeholder="Ask about terrain slope, water ice volatiles, cryogenic limits, or DSN communication windows..."
+            className="flex-1 bg-white border border-[#E8EAED] rounded-full px-4 py-2 text-xs font-sans text-[#202124] placeholder-[#5F6368] focus:outline-none focus:border-[#1A73E8]"
           />
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="w-9 h-9 rounded-full bg-[#d86c6c] hover:bg-[#c55a5a] disabled:opacity-50 text-white flex items-center justify-center transition-colors cursor-pointer flex-shrink-0"
+            className="w-9 h-9 rounded-full bg-[#1A73E8] hover:bg-[#1565C0] disabled:opacity-50 text-white flex items-center justify-center transition-colors cursor-pointer flex-shrink-0 shadow-sm"
           >
             <Send className="w-4 h-4" />
           </button>

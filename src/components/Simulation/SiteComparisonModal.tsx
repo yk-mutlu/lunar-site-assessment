@@ -1,10 +1,21 @@
+// ═══════════════════════════════════════════════════════════════════════
+// SiteComparisonModal.tsx
+// Multi-Site Landing Matrix & Trade-Off Comparison (Google Workspace / Sheets Style)
+//
+// NASA Space Apps Challenge Requirement F:
+// Allows side-by-side evaluation of candidate landing locations across:
+// - Solar illumination duration and elevation
+// - Earth visibility and Deep Space Network communication opportunities
+// - Estimated solar power potential
+// - Slope profile and terrain hazards
+// ═══════════════════════════════════════════════════════════════════════
+
 "use client";
 
 import React, { useMemo } from "react";
 import { useStore, NOTABLE_TARGETS } from "@/store";
 import { computeSiteAssessment } from "@/data/assessment-engine";
 import { computeHorizonEphemeris } from "@/data/ephemeris";
-import type { LunarTarget } from "@/types";
 import {
   X,
   Plus,
@@ -15,9 +26,10 @@ import {
   Globe,
   Radio,
   Mountain,
-  Droplets,
   Layers,
   ArrowRight,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 
 interface SiteComparisonModalProps {
@@ -34,6 +46,7 @@ export const SiteComparisonModal: React.FC<SiteComparisonModalProps> = ({
     addComparisonTarget,
     removeComparisonTarget,
     setSelectedTarget,
+    setRightPanelOpen,
     activeLander,
     footprintRadiusKm,
     lunarDayHour,
@@ -59,20 +72,21 @@ export const SiteComparisonModal: React.FC<SiteComparisonModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in select-none font-sans">
-      <div className="w-full max-w-5xl bg-[#181a20] border border-[#282a33] rounded-3xl shadow-tesla flex flex-col max-h-[90vh] overflow-hidden text-[#f4f4f6]">
-        {/* Header */}
-        <div className="h-16 px-6 border-b border-[#282a33] flex items-center justify-between bg-[#14151a]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in select-none font-sans">
+      <div className="w-full max-w-5xl bg-white border border-[#E8EAED] rounded-2xl shadow-[0_12px_40px_rgba(60,64,67,0.25)] flex flex-col max-h-[90vh] overflow-hidden text-[#202124]">
+        
+        {/* Header Bar (Google Workspace Style) */}
+        <div className="h-16 px-6 border-b border-[#E8EAED] flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[rgba(216,108,108,0.15)] flex items-center justify-center">
-              <Layers className="w-5 h-5 text-[#d86c6c]" />
+            <div className="w-9 h-9 rounded-xl bg-[#E8F0FE] flex items-center justify-center text-[#1A73E8]">
+              <Layers className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-[#f4f4f6]">
-                Çoklu İniş Sahası Yan Yana Karşılaştırma Matrisi
+              <h2 className="text-base font-semibold text-[#202124]">
+                Multi-Site Landing Comparison Matrix
               </h2>
-              <p className="text-xs text-[#9496a1]">
-                NASA Artemis III ve CLPS iniş opsiyonları, aydınlatma ve DTE iletişim ticari dengeleri
+              <p className="text-xs text-[#5F6368]">
+                Side-by-side trade-off analysis across illumination, power, comms, and slope hazards
               </p>
             </div>
           </div>
@@ -87,15 +101,15 @@ export const SiteComparisonModal: React.FC<SiteComparisonModalProps> = ({
                   e.target.value = "";
                 }}
                 defaultValue=""
-                className="text-xs bg-[#22242c] border border-[#282a33] rounded-full px-3 py-1.5 text-[#f4f4f6] focus:outline-none cursor-pointer"
+                className="text-xs bg-[#F8F9FA] border border-[#DADCE0] hover:border-[#1A73E8] rounded-xl px-3 py-1.5 text-[#202124] focus:outline-none cursor-pointer"
               >
-                <option value="" disabled className="bg-[#181a20]">
-                  + Saha Ekle...
+                <option value="" disabled>
+                  + Add Site to Compare...
                 </option>
                 {NOTABLE_TARGETS.filter(
                   (nt) => !comparisonTargets.some((ct) => ct.id === nt.id)
                 ).map((nt) => (
-                  <option key={nt.id} value={nt.id} className="bg-[#181a20] text-[#f4f4f6]">
+                  <option key={nt.id} value={nt.id}>
                     {nt.name}
                   </option>
                 ))}
@@ -104,155 +118,165 @@ export const SiteComparisonModal: React.FC<SiteComparisonModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#9496a1] hover:text-[#f4f4f6] hover:bg-[#22242c] transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5F6368] hover:text-[#202124] hover:bg-[#F1F3F4] transition-colors cursor-pointer"
+              title="Close Dialog"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Comparison Grid Table */}
-        <div className="flex-1 overflow-auto p-6 bg-[#181a20]">
+        <div className="flex-1 overflow-auto p-6 bg-[#F8F9FA]">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {comparisons.map(({ target, assessment, ephemeris }) => {
               const isReject = assessment.classification === "CRITICAL HAZARD - REJECT";
+              const isNominal = assessment.overallScore >= 85;
+
               return (
                 <div
                   key={target.id}
-                  className="rounded-2xl border border-[#282a33] bg-[#121317] shadow-sm flex flex-col overflow-hidden hover:border-[#3a3d4a] transition-all"
+                  className="rounded-2xl border border-[#E8EAED] bg-white shadow-sm flex flex-col overflow-hidden hover:shadow-md transition-shadow"
                 >
                   {/* Card Header */}
-                  <div className="p-4 bg-[#14151a] border-b border-[#282a33] relative">
+                  <div className="p-4 bg-white border-b border-[#E8EAED] relative">
                     {comparisons.length > 1 && (
                       <button
                         onClick={() => removeComparisonTarget(target.id)}
-                        className="absolute top-3 right-3 p-1 rounded-full text-[#9496a1] hover:text-[#d86c6c] transition-colors cursor-pointer"
-                        title="Karşılaştırmadan Kaldır"
+                        className="absolute top-3.5 right-3 p-1 rounded-lg text-[#5F6368] hover:text-[#EA4335] hover:bg-[#FCE8E6] transition-colors cursor-pointer"
+                        title="Remove from Comparison"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <span className="text-[10px] font-semibold text-[#d86c6c] uppercase tracking-wider block">
-                      {target.category || "İniş Sahası"}
+                    <span className="text-[10px] font-semibold text-[#1A73E8] uppercase tracking-wider block">
+                      {target.category || "Landing Site"}
                     </span>
-                    <h3 className="text-sm font-bold text-[#f4f4f6] mt-0.5 truncate pr-6">
+                    <h3 className="text-sm font-semibold text-[#202124] mt-0.5 truncate pr-6">
                       {target.name}
                     </h3>
-                    <div className="text-xs text-[#9496a1] font-mono mt-1">
-                      {target.lat.toFixed(2)}°, {target.lng.toFixed(2)}°
+                    <div className="text-xs text-[#5F6368] font-mono mt-0.5">
+                      {target.lat >= 0 ? `${target.lat.toFixed(2)}°N` : `${Math.abs(target.lat).toFixed(2)}°S`},{" "}
+                      {target.lng >= 0 ? `${target.lng.toFixed(2)}°E` : `${Math.abs(target.lng).toFixed(2)}°W`}
                     </div>
                   </div>
 
                   {/* Body Metrics */}
-                  <div className="p-4 space-y-3.5 flex-1 text-xs">
+                  <div className="p-4 space-y-3.5 flex-1 text-xs text-[#202124]">
                     {/* Overall Score */}
-                    <div className="flex items-center justify-between pb-2 border-b border-[#282a33]">
-                      <span className="text-[#9496a1]">Genel İniş Skoru:</span>
-                      <span className="text-base font-bold font-mono text-[#f4f4f6]">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#E8EAED]">
+                      <span className="text-[#5F6368]">Suitability Score:</span>
+                      <span className="text-base font-bold font-mono text-[#202124]">
                         {assessment.overallScore} / 100
                       </span>
                     </div>
 
                     {/* Status Badge */}
                     <div className="flex justify-between items-center">
-                      <span className="text-[#9496a1]">Durum:</span>
+                      <span className="text-[#5F6368]">Classification:</span>
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${
                           isReject
-                            ? "bg-[rgba(216,108,108,0.15)] text-[#d86c6c]"
-                            : "bg-[rgba(52,199,89,0.15)] text-[#34c759]"
+                            ? "bg-[#FCE8E6] text-[#EA4335]"
+                            : isNominal
+                            ? "bg-[#E6F4EA] text-[#34A853]"
+                            : "bg-[#FEF7E0] text-[#FBBC05]"
                         }`}
                       >
-                        {isReject ? "KABUL EDİLEMEZ" : "UYGUN"}
+                        {isReject ? "Reject" : isNominal ? "Class A" : "Class B"}
                       </span>
                     </div>
 
-                    {/* Slope & Roughness */}
+                    {/* Solar Illumination Uptime */}
                     <div className="space-y-1">
-                      <div className="flex justify-between text-[#9496a1]">
-                        <span className="flex items-center gap-1">
-                          <Mountain className="w-3 h-3 text-[#9496a1]" /> Eğim Profili:
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#5F6368] flex items-center gap-1">
+                          <Sun className="w-3.5 h-3.5 text-[#FBBC05]" />
+                          Solar Illumination:
                         </span>
-                        <span className="font-mono text-[#f4f4f6] font-semibold">
-                          {assessment.criteria.find((c) => c.id === "slope")?.value || "N/A"}
+                        <span className="font-semibold text-[#202124] font-mono">
+                          {assessment.solarUptimePct}%
                         </span>
                       </div>
-                      <div className="w-full bg-[#22242c] h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#E8EAED] rounded-full h-1.5 overflow-hidden">
                         <div
-                          className="bg-[#d86c6c] h-full rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              (assessment.criteria.find((c) => c.id === "slope")?.score || 50)
-                            )}%`,
-                          }}
+                          className="h-full bg-[#FBBC05] rounded-full"
+                          style={{ width: `${assessment.solarUptimePct}%` }}
                         />
                       </div>
                     </div>
 
-                    {/* Sun Elevation & Lighting */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[#9496a1]">
-                        <span className="flex items-center gap-1">
-                          <Sun className="w-3 h-3 text-[#ff9f0a]" /> Güneş Ufuk Açısı:
-                        </span>
-                        <span className="font-mono text-[#f4f4f6] font-semibold">
-                          {ephemeris.sunElevationDeg > 0 ? `+${ephemeris.sunElevationDeg}°` : `${ephemeris.sunElevationDeg}°`}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[#9496a1] flex justify-between">
-                        <span>Yıllık Uptime: %{assessment.solarUptimePct}</span>
-                        <span>Güç: %{ephemeris.solarPowerPotentialPct}</span>
-                      </div>
+                    {/* Solar Elevation Now */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#5F6368]">Current Solar Elev:</span>
+                      <span className="font-semibold text-[#202124] font-mono">
+                        {ephemeris.sunElevationDeg > 0 ? `+${ephemeris.sunElevationDeg}°` : `${ephemeris.sunElevationDeg}°`}
+                      </span>
                     </div>
 
-                    {/* Earth LOS & Comms */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[#9496a1]">
-                        <span className="flex items-center gap-1">
-                          <Globe className="w-3 h-3 text-[#4a9eff]" /> Dünya Görüş Açısı:
-                        </span>
-                        <span className="font-mono text-[#f4f4f6] font-semibold">
-                          {ephemeris.earthElevationDeg > 0 ? `+${ephemeris.earthElevationDeg}°` : `${ephemeris.earthElevationDeg}°`}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-[#9496a1] flex justify-between">
-                        <span>DTE Bağlantısı:</span>
-                        <span className={assessment.earthLOS.directLineOfSight ? "text-[#34c759] font-medium" : "text-[#d86c6c] font-medium"}>
-                          {assessment.earthLOS.directLineOfSight ? "Doğrudan LOS" : "Röle Zorunlu"}
-                        </span>
-                      </div>
+                    {/* Estimated Solar Power Output */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#5F6368] flex items-center gap-1">
+                        <Zap className="w-3.5 h-3.5 text-[#FBBC05]" />
+                        Est. Power (Vertical):
+                      </span>
+                      <span className="font-semibold text-[#202124] font-mono">
+                        {ephemeris.panelOrientationWatts?.vertical} W
+                      </span>
                     </div>
 
-                    {/* Water Ice Potential */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[#9496a1]">
-                        <span className="flex items-center gap-1">
-                          <Droplets className="w-3 h-3 text-[#4a9eff]" /> Su Buzu Olasılığı:
-                        </span>
-                        <span className="font-mono text-[#f4f4f6] font-semibold">
-                          %{assessment.waterIceProbabilityPct}
-                        </span>
-                      </div>
-                      <div className="w-full bg-[#22242c] h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#4a9eff] h-full rounded-full"
-                          style={{ width: `${assessment.waterIceProbabilityPct}%` }}
-                        />
-                      </div>
+                    {/* Earth Visibility & DSN Comms */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#5F6368] flex items-center gap-1">
+                        <Radio className="w-3.5 h-3.5 text-[#1A73E8]" />
+                        DSN Direct LOS:
+                      </span>
+                      <span
+                        className={`font-semibold font-mono ${
+                          ephemeris.isCommsViable ? "text-[#34A853]" : "text-[#EA4335]"
+                        }`}
+                      >
+                        {ephemeris.isCommsViable ? `+${ephemeris.rfLinkMarginDb} dB` : "Occluded"}
+                      </span>
+                    </div>
+
+                    {/* Touchdown Slope */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#5F6368] flex items-center gap-1">
+                        <Mountain className="w-3.5 h-3.5 text-[#5F6368]" />
+                        Slope Gradient:
+                      </span>
+                      <span
+                        className={`font-semibold font-mono ${
+                          assessment.hardConstraints[0].status === "pass"
+                            ? "text-[#34A853]"
+                            : "text-[#EA4335]"
+                        }`}
+                      >
+                        {assessment.criteria[0].value}
+                      </span>
+                    </div>
+
+                    {/* Water Ice Proximity */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#5F6368]">Water Ice (PSR):</span>
+                      <span className="font-semibold text-[#1A73E8] font-mono">
+                        {assessment.waterIceProbabilityPct}%
+                      </span>
                     </div>
                   </div>
 
-                  {/* Select button */}
-                  <div className="p-3 bg-[#14151a] border-t border-[#282a33]">
+                  {/* Card Action Button */}
+                  <div className="p-3 border-t border-[#E8EAED] bg-[#F8F9FA]">
                     <button
                       onClick={() => {
                         setSelectedTarget(target);
+                        setRightPanelOpen(true);
                         onClose();
                       }}
-                      className="w-full py-2 rounded-full bg-[#22242c] hover:bg-[#d86c6c] hover:text-white text-[#f4f4f6] text-xs font-semibold border border-[#282a33] transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      className="w-full bg-white hover:bg-[#E8F0FE] text-[#1A73E8] hover:text-[#1565C0] border border-[#DADCE0] hover:border-[#1A73E8] py-2 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <span>Bu Sahayı Seç</span>
+                      <span>Select This Target</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -262,19 +286,22 @@ export const SiteComparisonModal: React.FC<SiteComparisonModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="h-14 px-6 border-t border-[#282a33] bg-[#14151a] flex items-center justify-between text-xs text-[#9496a1]">
-          <span>
-            Toplam {comparisons.length} aday saha karşılaştırılıyor · NASA LRO & DE440 Efemeris
-          </span>
+        {/* Footer Note */}
+        <div className="px-6 py-3 border-t border-[#E8EAED] bg-white flex flex-col sm:flex-row items-center justify-between text-xs text-[#5F6368] gap-2">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-[#34A853]" />
+            <span>Comparison metrics derived from NASA LRO LOLA and JPL Horizons astronomical models.</span>
+          </div>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-full bg-[#22242c] hover:bg-[#2c2f3a] text-[#f4f4f6] border border-[#282a33] font-medium transition-colors cursor-pointer"
+            className="px-4 py-1.5 rounded-xl bg-[#F1F3F4] hover:bg-[#E8EAED] text-[#202124] font-medium transition-colors cursor-pointer"
           >
-            Kapat
+            Close Matrix
           </button>
         </div>
       </div>
     </div>
   );
 };
+
+export default SiteComparisonModal;

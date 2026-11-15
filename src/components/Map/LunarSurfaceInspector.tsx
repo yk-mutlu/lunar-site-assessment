@@ -105,8 +105,33 @@ export const LunarSurfaceInspector: React.FC = () => {
   const [lidarSweepAngle, setLidarSweepAngle] = useState<number>(0);
   const [isInCloseUpView, setIsInCloseUpView] = useState<boolean>(false);
   const [isTargetLocked, setIsTargetLocked] = useState<boolean>(false);
-  // Default to the authentic 4K Sketchfab Petavius Crater 3D model requested by the user
-  const [terrainViewMode, setTerrainViewMode] = useState<"sketchfab" | "lidar">("sketchfab");
+  // Default to native Three.js 3D Crater mesh for immediate, reliable, offline-ready display
+  const [terrainViewMode, setTerrainViewMode] = useState<"sketchfab" | "lidar">("lidar");
+  const [isSketchfabLoaded, setIsSketchfabLoaded] = useState<boolean>(false);
+
+  // Listen for Sketchfab embed readiness or fallback timer to dismiss loader
+  useEffect(() => {
+    const handleMsg = (e: MessageEvent) => {
+      try {
+        if (
+          typeof e.data === "string" &&
+          (e.data.includes("viewerready") || e.data.includes("modelLoaded"))
+        ) {
+          setIsSketchfabLoaded(true);
+        }
+      } catch {}
+    };
+    window.addEventListener("message", handleMsg);
+
+    const timer = setTimeout(() => {
+      setIsSketchfabLoaded(true);
+    }, 4500);
+
+    return () => {
+      window.removeEventListener("message", handleMsg);
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Automated Safe Site Detection using Petavius DEM function
   useEffect(() => {
@@ -128,7 +153,7 @@ export const LunarSurfaceInspector: React.FC = () => {
   const rocks: LunarRock[] = useMemo(() => {
     const list: LunarRock[] = [];
     const seed = Math.abs(Math.sin(selectedTarget.lat * 100 + selectedTarget.lng * 50));
-    
+
     let s = seed + 0.12345;
     const rnd = () => {
       s = (s * 9301 + 49297) % 233280;
@@ -156,7 +181,7 @@ export const LunarSurfaceInspector: React.FC = () => {
 
       list.push({
         id: `rock-p-${i}`,
-        name: `Çakıl Taşı #${i < 10 ? `0${i}` : i}`,
+        name: `Pebble #${i < 10 ? `0${i}` : i}`,
         x,
         y,
         z,
@@ -167,7 +192,7 @@ export const LunarSurfaceInspector: React.FC = () => {
         riskLevel: "safe",
         clearanceMarginCm,
         slopeDeg,
-        mineralogy: i % 2 === 0 ? "Anortozitik Plajiyoklaz Çakılı" : "Titanyumlu İlmenit Ejektası",
+        mineralogy: i % 2 === 0 ? "Anorthositic Plagioclase Pebble" : "Titaniferous Ilmenite Ejecta",
         category: "pebble",
       });
     }
@@ -194,7 +219,7 @@ export const LunarSurfaceInspector: React.FC = () => {
 
       list.push({
         id: `rock-m-${i}`,
-        name: `Kaya Parçası #${i < 10 ? `0${i}` : i}`,
+        name: `Rock Fragment #${i < 10 ? `0${i}` : i}`,
         x,
         y,
         z,
@@ -205,7 +230,7 @@ export const LunarSurfaceInspector: React.FC = () => {
         riskLevel: isHazard ? "hazard" : "caution",
         clearanceMarginCm,
         slopeDeg,
-        mineralogy: "Darbe Breşi & Vitrifize Regolit Çimentosu",
+        mineralogy: "Impact Breccia & Vitrified Regolith Matrix",
         category: "rock",
       });
     }
@@ -226,7 +251,7 @@ export const LunarSurfaceInspector: React.FC = () => {
 
       list.push({
         id: `rock-b-${i}`,
-        name: `Masif Kaya Blok #${i < 10 ? `0${i}` : i}`,
+        name: `Massive Boulder #${i < 10 ? `0${i}` : i}`,
         x,
         y,
         z,
@@ -237,7 +262,7 @@ export const LunarSurfaceInspector: React.FC = () => {
         riskLevel: "hazard",
         clearanceMarginCm: -Math.round(heightM * 100 - 50),
         slopeDeg,
-        mineralogy: "Kratersel Krater Tabanı Masif Anortozit Bloğu",
+        mineralogy: "Crater Floor Massive Anorthosite Block",
         category: "boulder",
       });
     }
@@ -306,51 +331,90 @@ export const LunarSurfaceInspector: React.FC = () => {
     earthMesh.position.set(-180, 45, -350);
     scene.add(earthMesh);
 
-    // Realistic 3D Lunar Petavius Crater 4K Terrain Mesh
-    const terrainGeo = new THREE.PlaneGeometry(600, 600, 240, 240);
+    // Realistic 3D Lunar Petavius Crater PBR Terrain Mesh (Expansive & Seamless)
+    const terrainGeo = new THREE.PlaneGeometry(800, 800, 240, 240);
     terrainGeo.rotateX(-Math.PI / 2);
 
     const posAttr = terrainGeo.attributes.position;
+    const uvAttr = terrainGeo.attributes.uv;
+    const colors = new Float32Array(posAttr.count * 3);
+
     for (let i = 0; i < posAttr.count; i++) {
       const vx = posAttr.getX(i);
       const vz = posAttr.getZ(i);
-      posAttr.setY(i, getPetaviusTerrainHeight(vx, vz));
+      const vy = getPetaviusTerrainHeight(vx, vz);
+      posAttr.setY(i, vy);
+
+      // Planar Metrik UV (20 metrede bir dikişsiz regolit dokusu)
+      uvAttr.setXY(i, vx / 20.0, vz / 20.0);
+
+      // Regolit renk tonlaması (Yükseltilmiş kenarlar açık, çanaklar koyu)
+      let albedo = 0.58;
+      if (vy > 1.5) albedo += Math.min(0.24, (vy - 1.5) * 0.04);
+      else if (vy < -2.0) albedo -= Math.min(0.18, (-vy - 2.0) * 0.02);
+      albedo = Math.max(0.38, Math.min(0.92, albedo));
+
+      colors[i * 3] = albedo;
+      colors[i * 3 + 1] = albedo;
+      colors[i * 3 + 2] = albedo * 1.02;
     }
+    terrainGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     terrainGeo.computeVertexNormals();
-    terrainGeo.setAttribute("uv2", terrainGeo.attributes.uv);
+    terrainGeo.computeTangents();
 
     const textureLoader = new THREE.TextureLoader();
-    const albedoTex = textureLoader.load("/textures/petavius/petavius_albedo_4k.jpg");
-    albedoTex.colorSpace = THREE.SRGBColorSpace;
-    albedoTex.wrapS = THREE.RepeatWrapping;
-    albedoTex.wrapT = THREE.RepeatWrapping;
+    const regolithDiffuse = textureLoader.load("/textures/lunar_regolith_seamless_diffuse.jpg");
+    regolithDiffuse.colorSpace = THREE.SRGBColorSpace;
+    regolithDiffuse.wrapS = THREE.RepeatWrapping;
+    regolithDiffuse.wrapT = THREE.RepeatWrapping;
+    regolithDiffuse.anisotropy = 16;
 
-    const normalTex = textureLoader.load("/textures/petavius/petavius_normal_4k.jpg");
-    normalTex.wrapS = THREE.RepeatWrapping;
-    normalTex.wrapT = THREE.RepeatWrapping;
-
-    const aoTex = textureLoader.load("/textures/petavius/petavius_ao_4k.jpg");
-    aoTex.wrapS = THREE.RepeatWrapping;
-    aoTex.wrapT = THREE.RepeatWrapping;
-
-    const roughnessTex = textureLoader.load("/textures/petavius/petavius_roughness_4k.jpg");
-    roughnessTex.wrapS = THREE.RepeatWrapping;
-    roughnessTex.wrapT = THREE.RepeatWrapping;
+    const regolithNormal = textureLoader.load("/textures/lunar_regolith_seamless_normal.jpg");
+    regolithNormal.wrapS = THREE.RepeatWrapping;
+    regolithNormal.wrapT = THREE.RepeatWrapping;
+    regolithNormal.anisotropy = 16;
 
     const terrainMat = new THREE.MeshStandardMaterial({
-      map: albedoTex,
-      normalMap: normalTex,
-      normalScale: new THREE.Vector2(2.5, 2.5),
-      aoMap: aoTex,
-      aoMapIntensity: 1.2,
-      roughnessMap: roughnessTex,
-      roughness: 0.92,
-      metalness: 0.05,
+      map: regolithDiffuse,
+      normalMap: regolithNormal,
+      normalScale: new THREE.Vector2(0.35, 0.35),
+      roughness: 0.94,
+      metalness: 0.02,
+      vertexColors: true,
       flatShading: false,
     });
     const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
     terrainMesh.receiveShadow = true;
     scene.add(terrainMesh);
+
+    // Ufka Uzanan Kesintisiz Ay Kabuğu Etekliği (Horizon Skirt: r=380m -> 4500m)
+    const skirtGeo = new THREE.RingGeometry(380, 4500, 96, 24);
+    skirtGeo.rotateX(-Math.PI / 2);
+    const sPos = skirtGeo.attributes.position;
+    const sUvs = skirtGeo.attributes.uv;
+    const sColors = new Float32Array(sPos.count * 3);
+
+    for (let i = 0; i < sPos.count; i++) {
+      const sx = sPos.getX(i);
+      const sz = sPos.getZ(i);
+      const sr = Math.hypot(sx, sz);
+
+      const sphereDrop = -Math.pow(sr - 380, 2) / 35000;
+      const hills = Math.sin(sx * 0.004) * Math.cos(sz * 0.004) * 28.0;
+      sPos.setY(i, sphereDrop + hills);
+
+      sUvs.setXY(i, sx / 20.0, sz / 20.0);
+      sColors[i * 3] = 0.58;
+      sColors[i * 3 + 1] = 0.58;
+      sColors[i * 3 + 2] = 0.59;
+    }
+    skirtGeo.setAttribute("color", new THREE.BufferAttribute(sColors, 3));
+    skirtGeo.computeVertexNormals();
+    skirtGeo.computeTangents();
+
+    const skirtMesh = new THREE.Mesh(skirtGeo, terrainMat);
+    skirtMesh.receiveShadow = false;
+    scene.add(skirtMesh);
 
     // Low Polar Grazing Sun Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.22);
@@ -427,8 +491,8 @@ export const LunarSurfaceInspector: React.FC = () => {
         r.category === "pebble"
           ? new THREE.DodecahedronGeometry(r.widthM * 0.5, 1)
           : r.category === "rock"
-          ? new THREE.IcosahedronGeometry(r.widthM * 0.5, 1)
-          : new THREE.IcosahedronGeometry(r.widthM * 0.5, 2);
+            ? new THREE.IcosahedronGeometry(r.widthM * 0.5, 1)
+            : new THREE.IcosahedronGeometry(r.widthM * 0.5, 2);
 
       const vPos = baseGeo.attributes.position;
       for (let k = 0; k < vPos.count; k++) {
@@ -443,8 +507,8 @@ export const LunarSurfaceInspector: React.FC = () => {
         r.category === "pebble"
           ? 0x8a8d96
           : r.riskLevel === "hazard"
-          ? 0x5a5c63
-          : 0x767982;
+            ? 0x5a5c63
+            : 0x767982;
 
       const rockMat = new THREE.MeshStandardMaterial({
         color: rockColor,
@@ -747,12 +811,12 @@ export const LunarSurfaceInspector: React.FC = () => {
         <div className="fixed inset-0 pointer-events-none z-40 flex items-center justify-center animate-fade-in">
           <div className="relative flex items-center justify-center">
             <div className="w-40 h-40 border border-[#38bdf8]/60 rounded-full animate-ping opacity-60" />
-            <div className="w-28 h-28 border-2 border-dashed border-[#d86c6c] rounded-full animate-spin" style={{ animationDuration: '6s' }} />
-            <div className="absolute flex flex-col items-center gap-1 bg-[#181a20]/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#38bdf8]/50">
-              <span className="text-[10px] font-mono text-[#38bdf8] font-bold tracking-widest uppercase animate-pulse">
-                HEDEF KİLİTLENDİ (FLY-TO)
+            <div className="w-28 h-28 border-2 border-dashed border-[#1A73E8] rounded-full animate-spin" style={{ animationDuration: '6s' }} />
+            <div className="absolute flex flex-col items-center gap-1 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-[#E8EAED] shadow-md">
+              <span className="text-[10px] font-mono text-[#1A73E8] font-bold tracking-widest uppercase animate-pulse">
+                TARGET ACQUIRED (FLY-TO)
               </span>
-              <span className="text-xs font-bold text-white font-mono">
+              <span className="text-xs font-semibold text-[#202124] font-mono">
                 {selectedCandidateSite?.code} · {selectedCandidateSite?.name}
               </span>
             </div>
@@ -763,132 +827,135 @@ export const LunarSurfaceInspector: React.FC = () => {
       {/* Cinematic Vignette Overlay */}
       <div className="absolute inset-0 pointer-events-none z-20 bg-[radial-gradient(ellipse_at_center,transparent_60%,rgba(0,0,0,0.65)_100%)]" />
 
-      {/* 1. Authentic 4K Sketchfab Petavius Crater 3D Model Viewer (Exact model requested by user) */}
+      {/* 1. Authentic 4K Sketchfab Petavius Crater 3D Model Viewer */}
       <iframe
         title="Moon - Petavius crater (4K)"
-        className={`absolute inset-0 w-full h-full border-0 bg-black ${
-          terrainViewMode === "sketchfab" ? "z-10 block" : "z-0 hidden"
-        }`}
-        src="https://sketchfab.com/models/ce9c009b517b421eab8c8429b536382f/embed?autostart=1&preload=1&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=1&ui_inspector=0&ui_annotations=1&ui_stop=0&ui_vr=0&dnt=1"
+        className={`absolute inset-0 w-full h-full border-0 bg-black ${terrainViewMode === "sketchfab" ? "z-10 block" : "z-0 hidden"
+          }`}
+        src="https://sketchfab.com/models/ce9c009b517b421eab8c8429b536382f/embed?autostart=1&preload=1&ui_loading=0&ui_hint=0&ui_theme=dark&ui_infos=0&ui_watermark=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_annotations=0&ui_stop=0&ui_vr=0&dnt=1"
         allow="autoplay; fullscreen; xr-spatial-tracking"
+        onLoad={() => {
+          setTimeout(() => setIsSketchfabLoaded(true), 2500);
+        }}
       />
+
+      {/* 4K Model Loading: Sadece tek bir dönen daire */}
+      {terrainViewMode === "sketchfab" && !isSketchfabLoaded && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05070c] select-none pointer-events-none">
+          <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
+      )}
 
       {/* 2. Procedural Three.js Surface Mount (LiDAR Mode) */}
       <div
         ref={mountRef}
-        className={`absolute inset-0 cursor-grab active:cursor-grabbing ${
-          terrainViewMode === "lidar" ? "z-10 block" : "z-0 hidden"
-        }`}
+        className={`absolute inset-0 cursor-grab active:cursor-grabbing ${terrainViewMode === "lidar" ? "z-10 block" : "z-0 hidden"
+          }`}
       />
 
       {/* Top Banner: Sub-Meter Mode Indicator & Return to Orbit */}
-      <div className="fixed top-20 left-4 z-30 flex items-center gap-2 pointer-events-auto">
+      <div className="fixed top-[116px] left-4 z-30 flex items-center gap-2 pointer-events-auto">
         <button
           onClick={() => setViewMode("3d")}
-          className="bg-[#181a20]/95 backdrop-blur-md hover:bg-[#22242c] text-[#f4f4f6] rounded-full px-4 h-10 flex items-center gap-2 shadow-tesla border border-[#282a33] text-xs font-medium transition-transform active:scale-95 cursor-pointer"
+          className="bg-white/95 backdrop-blur-md hover:bg-[#F8F9FA] text-[#202124] rounded-2xl px-4 h-10 flex items-center gap-2 shadow-sm border border-[#E8EAED] text-xs font-semibold transition-all active:scale-95 cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4 text-[#d86c6c]" />
-          <span>Yörüngeye Dön (3D Orbit)</span>
+          <ArrowLeft className="w-4 h-4 text-[#1A73E8]" />
+          <span>Return to 3D Orbit (Step 1)</span>
         </button>
 
         {/* Return to Overview Button when in closeup mode */}
         {isInCloseUpView && (
           <button
             onClick={handleReturnToOverview}
-            className="bg-[#181a20]/95 backdrop-blur-md hover:bg-[#22242c] text-[#f4f4f6] rounded-full px-4 h-10 flex items-center gap-2 shadow-tesla border border-[#d86c6c]/60 text-xs font-bold transition-transform active:scale-95 cursor-pointer animate-fade-in"
+            className="bg-white/95 backdrop-blur-md hover:bg-[#F8F9FA] text-[#1A73E8] rounded-2xl px-4 h-10 flex items-center gap-2 shadow-sm border border-[#1A73E8]/30 text-xs font-semibold transition-all active:scale-95 cursor-pointer animate-fade-in"
           >
-            <RotateCcw className="w-4 h-4 text-[#d86c6c]" />
-            <span className="text-[#d86c6c]">← Haritaya Dön</span>
+            <RotateCcw className="w-4 h-4 text-[#1A73E8]" />
+            <span>← Return to Overview</span>
           </button>
         )}
 
-        <div className="bg-[#181a20]/95 backdrop-blur-md rounded-full px-4 h-10 flex items-center gap-2 shadow-tesla border border-[#282a33] text-xs font-sans text-[#f4f4f6]">
-          <span className="w-2 h-2 rounded-full bg-[#34c759] animate-pulse" />
-          <span className="font-semibold text-[#f4f4f6]">Petavius Krateri 4K Yüzey Arazi Modeli</span>
-          <span className="text-[#9496a1] border-l border-[#282a33] pl-2 text-[11px]">
-            {terrainViewMode === "sketchfab" ? "Sketchfab 4K Orijinal ZBrush" : "LiDAR Simülasyon Ağı"}
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl px-4 h-10 flex items-center gap-2.5 shadow-sm border border-[#E8EAED] text-xs font-sans text-[#202124]">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#137333] animate-pulse" />
+          <span className="font-semibold text-[#202124]">Petavius Crater 4K Surface Mesh</span>
+          <span className="text-[#5F6368] border-l border-[#E8EAED] pl-2.5 text-xs font-medium">
+            {terrainViewMode === "sketchfab" ? "Sketchfab 4K Reference Model" : "LiDAR Hazard Grid"}
           </span>
         </div>
       </div>
 
       {/* Hovered Waypoint Tooltip */}
       {hoveredSite && !selectedCandidateSite && (
-        <div className="fixed top-36 left-1/2 -translate-x-1/2 z-30 bg-[#181a20]/95 backdrop-blur-md rounded-2xl shadow-tesla border border-[#282a33] px-4 py-2.5 text-xs font-sans pointer-events-none flex items-center gap-3 animate-fade-in">
-          <span className="px-2 py-0.5 rounded-full bg-[#d86c6c]/20 text-[#d86c6c] font-mono font-bold text-[11px]">
+        <div className="fixed top-32 left-1/2 -translate-x-1/2 z-30 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg border border-[#E8EAED] px-4 py-2.5 text-xs font-sans pointer-events-none flex items-center gap-3 animate-fade-in">
+          <span className="px-2.5 py-1 rounded-xl bg-[#F8F9FA] text-[#202124] font-mono font-bold text-xs border border-[#E8EAED]">
             {hoveredSite.code}
           </span>
           <div>
-            <span className="font-bold text-white block">{hoveredSite.name}</span>
-            <span className="text-[11px] text-[#9496a1]">
-              Puan: <strong className="text-[#34c759] font-mono">{hoveredSite.overallScore.toFixed(1)}/10</strong> • Eğim: {hoveredSite.measuredSlopeDeg}°
+            <span className="font-bold text-[#202124] text-xs block">{hoveredSite.name}</span>
+            <span className="text-xs text-[#5F6368]">
+              Score: <strong className="text-[#137333] font-mono">{hoveredSite.overallScore.toFixed(1)}/10</strong> • Slope: {hoveredSite.measuredSlopeDeg}°
             </span>
           </div>
-          <span className="text-[10px] text-[#38bdf8] font-medium bg-[#12141a] px-2 py-1 rounded-lg border border-[#22242c]">
-            Tıklayarak Yaklaş →
+          <span className="text-xs text-[#1A73E8] font-semibold bg-[#E8F0FE] px-3 py-1.5 rounded-xl border border-[#D2E3FC]">
+            Click to Inspect →
           </span>
         </div>
       )}
 
       {/* Top Right: Mode Switcher + Rock Filter Pills & LiDAR Scan Toggle */}
-      <div className="fixed top-20 right-4 z-30 flex items-center gap-2 pointer-events-auto">
+      <div className="fixed top-[68px] right-4 z-30 flex items-center gap-2 pointer-events-auto">
         {/* Model Mode Switcher */}
-        <div className="bg-[#181a20]/95 backdrop-blur-md rounded-full shadow-tesla border border-[#282a33] p-1 flex items-center gap-1 text-xs">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-sm border border-[#E8EAED] p-1 flex items-center gap-1 text-xs">
           <button
             onClick={() => setTerrainViewMode("sketchfab")}
-            className={`px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 font-medium ${
-              terrainViewMode === "sketchfab"
-                ? "bg-[#d86c6c] text-white shadow-sm"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 font-semibold ${terrainViewMode === "sketchfab"
+              ? "bg-[#1A73E8] text-white shadow-sm"
+              : "text-[#5F6368] hover:text-[#202124] hover:bg-[#F1F3F4]"
+              }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>4K Petavius (Sketchfab)</span>
           </button>
           <button
             onClick={() => setTerrainViewMode("lidar")}
-            className={`px-3 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 font-medium ${
-              terrainViewMode === "lidar"
-                ? "bg-[#d86c6c] text-white shadow-sm"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 font-semibold ${terrainViewMode === "lidar"
+              ? "bg-[#1A73E8] text-white shadow-sm"
+              : "text-[#5F6368] hover:text-[#202124] hover:bg-[#F1F3F4]"
+              }`}
           >
             <Scan className="w-3.5 h-3.5" />
-            <span>LiDAR & Çakıl İnceleme</span>
+            <span>LiDAR & Boulder Analysis</span>
           </button>
         </div>
 
         {/* When in LiDAR mode: Show rock filter pills */}
         {terrainViewMode === "lidar" && (
-          <div className="bg-[#181a20]/90 backdrop-blur-md rounded-full shadow-tesla border border-[#282a33] p-1 flex items-center gap-1 text-xs">
+          <div className="bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#E8EAED] p-1 flex items-center gap-1 text-xs">
             <button
               onClick={() => setRockFilter("all")}
-              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${
-                rockFilter === "all"
-                  ? "bg-[#d86c6c] text-white font-semibold"
-                  : "text-[#9496a1] hover:text-[#f4f4f6]"
-              }`}
+              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${rockFilter === "all"
+                ? "bg-[#1A73E8] text-white font-medium"
+                : "text-[#5F6368] hover:text-[#202124]"
+                }`}
             >
-              Tüm Kayalar ({rocks.length})
+              All Boulders ({rocks.length})
             </button>
             <button
               onClick={() => setRockFilter("pebble")}
-              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${
-                rockFilter === "pebble"
-                  ? "bg-[#d86c6c] text-white font-semibold"
-                  : "text-[#9496a1] hover:text-[#f4f4f6]"
-              }`}
+              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${rockFilter === "pebble"
+                ? "bg-[#1A73E8] text-white font-medium"
+                : "text-[#5F6368] hover:text-[#202124]"
+                }`}
             >
-              Çakıl Taşları (&lt;30cm)
+              Pebbles (&lt;30cm)
             </button>
             <button
               onClick={() => setRockFilter("hazard")}
-              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${
-                rockFilter === "hazard"
-                  ? "bg-[#d86c6c] text-white font-semibold"
-                  : "text-[#9496a1] hover:text-[#f4f4f6]"
-              }`}
+              className={`px-3 py-1.5 rounded-full transition-colors cursor-pointer ${rockFilter === "hazard"
+                ? "bg-[#D93025] text-white font-medium"
+                : "text-[#5F6368] hover:text-[#202124]"
+                }`}
             >
-              Tehlikeli Bloklar (&gt;45cm)
+              Hazardous Blocks (&gt;45cm)
             </button>
           </div>
         )}
@@ -899,12 +966,11 @@ export const LunarSurfaceInspector: React.FC = () => {
             if (terrainViewMode !== "lidar") setTerrainViewMode("lidar");
             setSurfaceLidarActive(!surfaceLidarActive);
           }}
-          className={`rounded-full px-3.5 h-10 flex items-center gap-1.5 shadow-tesla border text-xs font-medium transition-colors cursor-pointer ${
-            surfaceLidarActive && terrainViewMode === "lidar"
-              ? "bg-[#34c759]/20 text-[#34c759] border-[#34c759]/40"
-              : "bg-[#181a20]/90 text-[#9496a1] border-[#282a33]"
-          }`}
-          title="LiDAR Otonom Tehlike Taraması"
+          className={`rounded-full px-3.5 h-10 flex items-center gap-1.5 shadow-md border text-xs font-medium transition-colors cursor-pointer ${surfaceLidarActive && terrainViewMode === "lidar"
+            ? "bg-[#E6F4EA] text-[#137333] border-[#CEEAD6]"
+            : "bg-white/95 text-[#5F6368] border-[#E8EAED] hover:bg-[#F8F9FA]"
+            }`}
+          title="Autonomous LiDAR Hazard Detection (HDA)"
         >
           <Scan className="w-3.5 h-3.5" />
           <span>LiDAR HDA</span>
@@ -913,96 +979,94 @@ export const LunarSurfaceInspector: React.FC = () => {
 
       {/* Floating HUD: Selected Rock Telemetry Card (LiDAR Mode) */}
       {selectedRock && terrainViewMode === "lidar" && (
-        <div className="fixed bottom-6 left-6 z-40 max-w-sm w-full bg-[#181a20]/95 backdrop-blur-md rounded-2xl shadow-tesla border border-[#282a33] p-4 text-xs font-sans animate-fade-in pointer-events-auto">
-          <div className="flex items-start justify-between pb-2 mb-3 border-b border-[#282a33]">
+        <div className="fixed bottom-6 left-6 z-40 max-w-sm w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-[#E8EAED] p-4 text-xs font-sans animate-fade-in pointer-events-auto">
+          <div className="flex items-start justify-between pb-2 mb-3 border-b border-[#E8EAED]">
             <div className="flex items-center gap-2">
               <div
-                className={`w-3 h-3 rounded-full ${
-                  selectedRock.riskLevel === "safe"
-                    ? "bg-[#34c759]"
-                    : selectedRock.riskLevel === "caution"
-                    ? "bg-[#ff9f0a]"
-                    : "bg-[#d86c6c]"
-                }`}
+                className={`w-3 h-3 rounded-full ${selectedRock.riskLevel === "safe"
+                  ? "bg-[#137333]"
+                  : selectedRock.riskLevel === "caution"
+                    ? "bg-[#B06000]"
+                    : "bg-[#D93025]"
+                  }`}
               />
               <div>
-                <h4 className="font-semibold text-sm text-[#f4f4f6]">{selectedRock.name}</h4>
-                <span className="text-[10px] text-[#9496a1] uppercase tracking-wider">
+                <h4 className="font-bold text-sm text-[#0F172A]">{selectedRock.name}</h4>
+                <span className="text-xs text-[#64748B] uppercase tracking-wider font-semibold">
                   {selectedRock.category === "pebble"
-                    ? "Regolit Çakıl Taşı"
+                    ? "Regolith Pebble"
                     : selectedRock.category === "rock"
-                    ? "Orta Boy Ay Kayası"
-                    : "Masif Çarpma Bloğu"}
+                      ? "Medium Lunar Rock"
+                      : "Massive Impact Boulder"}
                 </span>
               </div>
             </div>
             <button
               onClick={() => setSelectedRock(null)}
-              className="p-1 rounded-full text-[#9496a1] hover:text-[#f4f4f6] hover:bg-[#22242c] cursor-pointer"
+              className="p-1.5 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] cursor-pointer"
             >
               ✕
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[#12141a] border border-[#22242c] mb-3">
+          <div className="grid grid-cols-3 gap-2 p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] mb-3">
             <div>
-              <div className="text-[10px] text-[#9496a1]">Çap / Genişlik</div>
-              <div className="font-mono text-sm font-bold text-[#f4f4f6]">
+              <div className="text-xs text-[#64748B] font-medium">Diameter / Width</div>
+              <div className="font-mono text-sm font-bold text-[#0F172A]">
                 {Math.round(selectedRock.widthM * 100)} cm
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-[#9496a1]">Yükseklik</div>
-              <div className="font-mono text-sm font-bold text-[#f4f4f6]">
+              <div className="text-xs text-[#64748B] font-medium">Height</div>
+              <div className="font-mono text-sm font-bold text-[#0F172A]">
                 {Math.round(selectedRock.heightM * 100)} cm
               </div>
             </div>
             <div>
-              <div className="text-[10px] text-[#9496a1]">Kütle (Ay Ağırlığı)</div>
-              <div className="font-mono text-sm font-bold text-[#f4f4f6]">
+              <div className="text-xs text-[#64748B] font-medium">Mass (Weight)</div>
+              <div className="font-mono text-sm font-bold text-[#0F172A]">
                 {selectedRock.weightKg} kg{" "}
-                <span className="text-[10px] text-[#9496a1]">
+                <span className="text-xs text-[#64748B] font-normal">
                   ({(selectedRock.weightKg * 0.166).toFixed(1)} kg-f)
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2 mb-3">
+          <div className="space-y-2 mb-3 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[#9496a1]">İniş Motor / Gövde Açıklığı:</span>
+              <span className="text-[#64748B] font-medium">Engine / Chassis Clearance:</span>
               <span
-                className={`font-semibold ${
-                  selectedRock.riskLevel === "safe"
-                    ? "text-[#34c759]"
-                    : selectedRock.riskLevel === "caution"
-                    ? "text-[#ff9f0a]"
-                    : "text-[#d86c6c]"
-                }`}
+                className={`font-bold ${selectedRock.riskLevel === "safe"
+                  ? "text-[#15803d]"
+                  : selectedRock.riskLevel === "caution"
+                    ? "text-[#B45309]"
+                    : "text-[#B91C1C]"
+                  }`}
               >
                 {selectedRock.riskLevel === "safe"
-                  ? "✓ GÜVENLİ (Gövde Altında Kalır)"
+                  ? "✓ SAFE (Passes Beneath Chassis)"
                   : selectedRock.riskLevel === "caution"
-                  ? "⚠ DİKKAT (Ayak Tabanına Yakın)"
-                  : "⛔ KRİTİK TEHLİKE (Devrilme Riski)"}
+                    ? "⚠ CAUTION (Near Landing Pad)"
+                    : "⛔ CRITICAL HAZARD (Tip-over Risk)"}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-[#9496a1]">Lander Merkezine Mesafe:</span>
-              <span className="font-mono text-[#f4f4f6]">
-                {Math.sqrt(selectedRock.x ** 2 + selectedRock.z ** 2).toFixed(2)} metre
+              <span className="text-[#64748B] font-medium">Distance to Lander Center:</span>
+              <span className="font-mono font-bold text-[#0F172A]">
+                {Math.sqrt(selectedRock.x ** 2 + selectedRock.z ** 2).toFixed(2)} meters
               </span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-[#9496a1]">Zemin Eğimi (Local Slope):</span>
-              <span className="font-mono text-[#f4f4f6]">{selectedRock.slopeDeg}°</span>
+              <span className="text-[#64748B] font-medium">Local Slope:</span>
+              <span className="font-mono font-bold text-[#0F172A]">{selectedRock.slopeDeg}°</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-[#9496a1]">Mineraloji:</span>
-              <span className="text-[#f4f4f6] text-[11px] truncate max-w-[170px]" title={selectedRock.mineralogy}>
+              <span className="text-[#64748B] font-medium">Mineralogy:</span>
+              <span className="text-[#0F172A] font-semibold truncate max-w-[180px]" title={selectedRock.mineralogy}>
                 {selectedRock.mineralogy}
               </span>
             </div>
@@ -1012,33 +1076,35 @@ export const LunarSurfaceInspector: React.FC = () => {
 
       {/* Hover Tooltip */}
       {hoveredRock && !selectedRock && terrainViewMode === "lidar" && (
-        <div className="fixed bottom-6 left-6 z-30 bg-[#181a20]/90 backdrop-blur-md rounded-xl shadow-tesla border border-[#282a33] px-3 py-2 text-xs font-sans pointer-events-none flex items-center gap-2">
-          <Crosshair className="w-3.5 h-3.5 text-[#d86c6c]" />
-          <span className="font-semibold text-[#f4f4f6]">{hoveredRock.name}</span>
-          <span className="text-[#9496a1]">• {Math.round(hoveredRock.widthM * 100)} cm</span>
-          <span className="text-[11px] text-[#ff9f0a]">Tıklayarak İncele</span>
+        <div className="fixed bottom-6 left-6 z-30 bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-[#E2E8F0] px-3.5 py-2.5 text-xs font-sans pointer-events-none flex items-center gap-2 text-[#0F172A]">
+          <Crosshair className="w-3.5 h-3.5 text-[#C2410C]" />
+          <span className="font-bold text-[#0F172A]">{hoveredRock.name}</span>
+          <span className="text-[#64748B]">• {Math.round(hoveredRock.widthM * 100)} cm</span>
+          <span className="text-xs text-[#C2410C] font-bold">Click to Inspect</span>
         </div>
       )}
 
       {/* Altitude & Distance Gauge (Bottom Right) */}
-      <div className="fixed bottom-6 right-6 z-30 bg-[#181a20]/90 backdrop-blur-md rounded-2xl shadow-tesla border border-[#282a33] p-3 text-xs font-sans flex items-center gap-4 pointer-events-auto">
+      <div className="fixed bottom-6 right-6 z-30 bg-white/95 backdrop-blur-md rounded-3xl shadow-md border border-[#E2E8F0] p-3.5 text-xs font-sans flex items-center gap-4 pointer-events-auto text-[#0F172A]">
         <div>
-          <div className="text-[10px] text-[#9496a1]">Model / Arazi</div>
-          <div className="font-mono text-sm font-bold text-[#f4f4f6]">
+          <div className="text-xs text-[#64748B] font-medium">Model / Terrain</div>
+          <div className="font-mono text-sm font-bold text-[#0F172A]">
             {terrainViewMode === "sketchfab" ? "Petavius (4K DEM)" : "LiDAR Grid"}
           </div>
         </div>
-        <div className="h-6 w-px bg-[#282a33]" />
+        <div className="h-6 w-px bg-[#E2E8F0]" />
         <div>
-          <div className="text-[10px] text-[#9496a1]">Krater Çapı</div>
-          <div className="font-semibold text-xs text-[#d86c6c]">177 km (Darbe)</div>
+          <div className="text-xs text-[#64748B] font-medium">Crater Diameter</div>
+          <div className="font-bold text-xs text-[#0F172A]">177 km (Impact)</div>
         </div>
-        <div className="h-6 w-px bg-[#282a33]" />
+        <div className="h-6 w-px bg-[#E2E8F0]" />
         <div>
-          <div className="text-[10px] text-[#9496a1]">Merkezi Tepe</div>
-          <div className="font-mono text-xs text-[#f4f4f6]">3,400 m</div>
+          <div className="text-xs text-[#64748B] font-medium">Central Peak</div>
+          <div className="font-mono text-xs font-bold text-[#0F172A]">3,400 m</div>
         </div>
       </div>
     </div>
   );
 };
+
+export default LunarSurfaceInspector;

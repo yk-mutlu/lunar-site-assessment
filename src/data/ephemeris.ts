@@ -102,17 +102,46 @@ export function computeHorizonEphemeris(
     }
   }
 
-  // Solar Power Potential: vertical polar solar panels capture grazing low-angle sunlight efficiently!
+  // Solar Irradiance and Power Potential Modeling (NASA Solar Constant = 1361 W/m2)
+  const solarConstant = 1361.0; // W/m2 at 1 AU
+  const cellEfficiency = 0.28; // GaInP/GaAs 28% space-grade multi-junction cell
+  const standardArrayAreaM2 = 2.0; // Standard 2m2 robotic rover/lander deployable array
+
   let solarPowerPotentialPct = 0;
+  let verticalWatts = 0;
+  let horizontalWatts = 0;
+  let trackingWatts = 0;
+  let actualIrradiance = 0;
+
   if (isSunVisible) {
+    actualIrradiance = solarConstant;
+    const sinElev = Math.sin(Math.max(0, sunElevationDeg) * DEG2RAD);
+    const cosElev = Math.cos(Math.max(0, sunElevationDeg) * DEG2RAD);
+
+    // Tracking array gets normal incidence (1.0)
+    trackingWatts = Math.round(solarConstant * cellEfficiency * standardArrayAreaM2);
+    // Vertical array efficiency proportional to cos(elevation)
+    verticalWatts = Math.round(solarConstant * cosElev * cellEfficiency * standardArrayAreaM2 * 0.9);
+    // Horizontal array efficiency proportional to sin(elevation)
+    horizontalWatts = Math.round(solarConstant * sinElev * cellEfficiency * standardArrayAreaM2);
+
     if (Math.abs(lat) > 75) {
-      // Polar vertical array efficiency
+      // Polar vertical array captures low grazing sunlight best
       solarPowerPotentialPct = Math.min(100, Math.round(80 + Math.min(20, sunElevationDeg * 6)));
     } else {
-      // Equatorial horizontal array efficiency
-      solarPowerPotentialPct = Math.min(100, Math.round(Math.sin(sunElevationDeg * DEG2RAD) * 100));
+      // Equatorial horizontal array captures overhead sun best
+      solarPowerPotentialPct = Math.min(100, Math.round(sinElev * 100));
     }
   }
+
+  // Deep Space Network RF Link Margin Modeling (X-band / Ka-band)
+  // Horizon geometric visibility does NOT automatically guarantee link closure:
+  // Requires >= 3.0° elevation clearance above local topographic obstacles
+  const isGeometricLOS = earthElevationDeg > 0;
+  const isCommsViable = earthElevationDeg > 3.0;
+  const rfLinkMarginDb = isCommsViable
+    ? Number((Math.min(14.5, 3.5 + earthElevationDeg * 0.35)).toFixed(1))
+    : Number((-10.0 + Math.max(-15, earthElevationDeg * 1.5)).toFixed(1));
 
   return {
     sunElevationDeg: Number(sunElevationDeg.toFixed(2)),
@@ -124,5 +153,14 @@ export function computeHorizonEphemeris(
     isSunVisible,
     isEarthVisible,
     solarPowerPotentialPct: Math.max(0, solarPowerPotentialPct),
+    solarIrradianceWm2: actualIrradiance,
+    panelOrientationWatts: {
+      vertical: verticalWatts,
+      horizontal: horizontalWatts,
+      tracking: trackingWatts,
+    },
+    rfLinkMarginDb,
+    isGeometricLOS,
+    isCommsViable,
   };
 }

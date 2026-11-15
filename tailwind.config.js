@@ -58,9 +58,9 @@ module.exports = {
         "tesla": "0 8px 32px 0 rgba(0, 0, 0, 0.5)",
       },
       fontFamily: {
-        sans: ["var(--font-body)", "Google Sans", "Roboto", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        display: ["var(--font-display)", "Google Sans", "sans-serif"],
-        mono: ["var(--font-mono)", "Roboto Mono", "monospace"],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        display: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', '"SF Mono"', 'Menlo', 'Consolas', 'monospace'],
       },
     },
   },

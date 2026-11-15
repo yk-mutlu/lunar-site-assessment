@@ -133,65 +133,64 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
   };
 
   return (
-    <div className="fixed top-20 left-4 bottom-6 z-40 w-[420px] max-w-[calc(100vw-2rem)] select-none font-sans pointer-events-none flex flex-col animate-fade-in">
-      <div className="pointer-events-auto bg-[#181a20]/95 backdrop-blur-md rounded-3xl shadow-tesla border border-[#282a33] flex flex-col h-full overflow-hidden text-[#f4f4f6]">
+    <div className="fixed top-[124px] left-4 bottom-6 z-40 w-[420px] max-w-[calc(100vw-2rem)] select-none font-sans pointer-events-none flex flex-col animate-fade-in">
+      <div className="pointer-events-auto bg-white rounded-3xl shadow-[0_8px_32px_rgba(15,23,42,0.12)] border border-[#E2E8F0] flex flex-col h-full overflow-hidden text-[#0F172A]">
         {/* Header Bar */}
-        <div className="p-4 pb-3 border-b border-[#282a33] bg-[#14151a] relative">
+        <div className="p-4 pb-3 border-b border-[#E2E8F0] bg-white relative">
           <button
             onClick={() => {
               setLeftDetailPanelOpen(false);
               if (onReturnToOverview) onReturnToOverview();
             }}
-            className="absolute top-4 right-4 p-1.5 rounded-full text-[#9496a1] hover:text-[#f4f4f6] hover:bg-[#22242c] transition-colors cursor-pointer"
-            title="Paneli Kapat"
+            className="absolute top-4 right-4 p-2 rounded-xl text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+            title="Close Panel"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-2 text-xs font-semibold mb-1">
-            <span className="px-2 py-0.5 rounded-full bg-[#d86c6c]/20 text-[#d86c6c] border border-[#d86c6c]/30 font-mono">
+          <div className="flex items-center gap-2 text-xs font-bold mb-1">
+            <span className="px-2.5 py-1 rounded-xl bg-[#F1F5F9] text-[#0F172A] border border-[#CBD5E1] font-mono">
               {site.code}
             </span>
-            <span className="text-[#9496a1] text-[11px]">AY İNİŞ SAHASI DETAY RAPORU</span>
+            <span className="text-[#64748B] text-xs uppercase tracking-wider">Assessment Report</span>
           </div>
 
-          <h2 className="text-xl font-bold text-[#f4f4f6] leading-tight pr-8">
+          <h2 className="text-base font-bold text-[#0F172A] leading-tight pr-8">
             {site.name}
           </h2>
 
-          <div className="flex items-center gap-2 mt-1 text-xs text-[#9496a1]">
-            <span className="font-mono text-[#f4f4f6]">
-              {site.geoCoord.lat >= 0 ? `${site.geoCoord.lat}°K` : `${Math.abs(site.geoCoord.lat)}°G`},{" "}
-              {site.geoCoord.lng >= 0 ? `${site.geoCoord.lng}°D` : `${Math.abs(site.geoCoord.lng)}°B`}
+          <div className="flex items-center gap-2 mt-1 text-xs text-[#64748B]">
+            <span className="font-mono font-medium text-[#0F172A]">
+              {site.geoCoord.lat >= 0 ? `${site.geoCoord.lat}°N` : `${Math.abs(site.geoCoord.lat)}°S`},{" "}
+              {site.geoCoord.lng >= 0 ? `${site.geoCoord.lng}°E` : `${Math.abs(site.geoCoord.lng)}°W`}
             </span>
             <span>•</span>
-            <span>Rakım: {site.elevationM} m</span>
+            <span>Elevation: {site.elevationM} m</span>
           </div>
 
-          <p className="text-[11px] text-[#9496a1] mt-2 leading-relaxed bg-[#121317] p-2.5 rounded-xl border border-[#22242c]">
+          <p className="text-xs text-[#64748B] mt-2.5 leading-relaxed bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0]">
             {site.reason}
           </p>
 
           {/* Overall Score Gauge & Badge */}
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#282a33]">
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#E2E8F0]">
             <div className="flex items-baseline gap-2">
-              <span className={`text-3xl font-extrabold font-mono tracking-tight ${getScoreColor(site.overallScore)}`}>
+              <span className={`text-2xl font-bold tracking-tight ${getScoreColor(site.overallScore)}`}>
                 {site.overallScore.toFixed(1)}
               </span>
-              <span className="text-xs text-[#9496a1] font-mono">/ 10.0 Puan</span>
+              <span className="text-xs text-[#64748B]">/ 10.0 Pts</span>
             </div>
 
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#22242c] border border-[#282a33]">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-[#F8FAFC] border border-[#E2E8F0]">
               <span
-                className={`w-2 h-2 rounded-full ${
-                  site.suitabilityLabel === "Mükemmel"
-                    ? "bg-[#34c759]"
-                    : site.suitabilityLabel === "Çok İyi"
-                    ? "bg-[#38bdf8]"
-                    : site.suitabilityLabel === "Orta"
-                    ? "bg-[#f59e0b]"
-                    : "bg-[#d86c6c]"
-                }`}
+                className={`w-2.5 h-2.5 rounded-full ${site.overallScore >= 8.5
+                  ? "bg-[#15803d]"
+                  : site.overallScore >= 7.0
+                    ? "bg-[#0F172A]"
+                    : site.overallScore >= 5.5
+                      ? "bg-[#B45309]"
+                      : "bg-[#B91C1C]"
+                  }`}
               />
               <span className={getScoreColor(site.overallScore)}>
                 {site.suitabilityLabel}
@@ -202,28 +201,27 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
           {/* Last Simulation Result Badge & Metrics (if simulated) */}
           {siteSimulationResults[site.id] && (
             <div
-              className={`mt-3 p-2.5 rounded-2xl border text-xs space-y-1 animate-fade-in ${
-                siteSimulationResults[site.id].success
-                  ? "bg-[#34c759]/15 border-[#34c759]/40 text-[#34c759]"
-                  : "bg-[#d86c6c]/15 border-[#d86c6c]/40 text-[#d86c6c]"
-              }`}
+              className={`mt-3 p-3 rounded-2xl border text-xs space-y-1 animate-fade-in ${siteSimulationResults[site.id].success
+                ? "bg-[#DCFCE7] border-[#86EFAC] text-[#15803d]"
+                : "bg-[#FEE2E2] border-[#FECACA] text-[#B91C1C]"
+                }`}
             >
               <div className="flex items-center justify-between font-bold">
                 <span className="flex items-center gap-1.5">
                   {siteSimulationResults[site.id].success ? (
-                    <CheckCircle2 className="w-4 h-4 text-[#34c759]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#15803d]" />
                   ) : (
-                    <AlertTriangle className="w-4 h-4 text-[#d86c6c]" />
+                    <AlertTriangle className="w-4 h-4 text-[#B91C1C]" />
                   )}
                   <span>
-                    Son Simülasyon: {siteSimulationResults[site.id].success ? "BAŞARILI" : "BAŞARISIZ"}
+                    Simulation: {siteSimulationResults[site.id].success ? "PASSED" : "FAILED"}
                   </span>
                 </span>
-                <span className="text-[11px] font-mono text-[#f4f4f6]">
+                <span className="text-xs font-mono">
                   Vz: {siteSimulationResults[site.id].touchdownVelocityMs.toFixed(1)} m/s
                 </span>
               </div>
-              <p className="text-[10px] text-[#f4f4f6]/90 leading-tight">
+              <p className="text-xs text-[#64748B] leading-tight">
                 {siteSimulationResults[site.id].cause}
               </p>
             </div>
@@ -231,105 +229,102 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
         </div>
 
         {/* Primary Action Button: Simulate Landing */}
-        <div className="p-3 border-b border-[#282a33] bg-[#121317] flex gap-2">
+        <div className="p-3 border-b border-[#E2E8F0] bg-white flex gap-2">
           <button
             onClick={handleSimulateClick}
-            className="flex-1 bg-[#d86c6c] hover:bg-[#c55a5a] text-white rounded-full py-2.5 px-4 text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"
+            className="flex-1 bg-[#C2410C] hover:bg-[#9A3412] text-white rounded-2xl py-3 px-4 text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+            title="Launch Earth Liftoff & Lunar Descent Simulation"
           >
             <Rocket className="w-4 h-4 fill-current" />
-            <span>İnişi Simüle Et</span>
+            <span>Mission Simulation</span>
           </button>
 
           {onOpenReport && (
             <button
               onClick={onOpenReport}
-              className="bg-[#22242c] hover:bg-[#2c2f3a] text-[#f4f4f6] border border-[#282a33] rounded-full py-2.5 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-              title="Tam Bilimsel Brifing Raporu"
+              className="bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] border border-[#CBD5E1] rounded-2xl py-3 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Full Scientific Briefing Report"
             >
-              <FileText className="w-3.5 h-3.5 text-[#9496a1]" />
-              <span>Rapor</span>
+              <FileText className="w-3.5 h-3.5 text-[#64748B]" />
+              <span>Briefing</span>
             </button>
           )}
         </div>
 
         {/* Vehicle Tolerance Profile Selector */}
-        <div className="px-4 py-2.5 border-b border-[#282a33] bg-[#14151a]">
-          <div className="flex items-center justify-between mb-1.5 text-[11px]">
-            <span className="text-[#9496a1]">Aktif İniş Aracı Toleransı:</span>
-            <span className="font-bold text-[#f4f4f6]">{activeLander.name}</span>
+        <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+          <div className="flex items-center justify-between mb-2 text-xs">
+            <span className="text-[#64748B] font-medium">Active Lander Tolerance:</span>
+            <span className="font-bold text-[#0F172A]">{activeLander.name}</span>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             {LANDER_PRESETS.slice(0, 2).map((l) => (
               <button
                 key={l.id}
                 onClick={() => handleLanderChange(l.id)}
-                className={`py-1.5 px-2 rounded-xl text-left border text-[11px] font-medium transition-all ${
-                  activeLander.id === l.id
-                    ? "bg-[#d86c6c]/15 border-[#d86c6c] text-[#f4f4f6]"
-                    : "bg-[#181a20] border-[#282a33] text-[#9496a1] hover:border-[#383a46]"
-                }`}
+                className={`py-2 px-3 rounded-2xl text-left border text-xs font-medium transition-all ${activeLander.id === l.id
+                  ? "bg-[#0F172A] text-white border-[#0F172A] shadow-sm font-semibold"
+                  : "bg-white border-[#E2E8F0] text-[#64748B] hover:border-[#CBD5E1]"
+                  }`}
               >
-                <div className="font-semibold text-xs">{l.name.split(" ")[0]}</div>
-                <div className="text-[10px] text-[#9496a1]">Eşik: {l.maxSlopeDeg}° eğim</div>
+                <div className="font-bold text-xs">{l.name.split(" ")[0]}</div>
+                <div className={`text-xs ${activeLander.id === l.id ? "text-slate-200" : "text-[#64748B]"}`}>Limit: {l.maxSlopeDeg}° slope</div>
               </button>
             ))}
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#282a33] bg-[#14151a] text-xs font-medium">
+        <div className="flex border-b border-[#E2E8F0] bg-white text-xs font-semibold">
           <button
             onClick={() => setActiveTab("scores")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "scores"
-                ? "text-[#d86c6c] font-semibold border-b-2 border-[#d86c6c]"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`flex-1 py-3 text-center transition-colors relative cursor-pointer ${activeTab === "scores"
+              ? "text-[#0F172A] font-bold border-b-2 border-[#0F172A]"
+              : "text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            10 Alt Kriter
+            10 Sub-Criteria
           </button>
           <button
             onClick={() => setActiveTab("criteria")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "criteria"
-                ? "text-[#d86c6c] font-semibold border-b-2 border-[#d86c6c]"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`flex-1 py-3 text-center transition-colors relative cursor-pointer ${activeTab === "criteria"
+              ? "text-[#0F172A] font-bold border-b-2 border-[#0F172A]"
+              : "text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
-            Ağırlıklar & Formüller
+            Weights & Formulas
           </button>
           <button
             onClick={() => setActiveTab("environment")}
-            className={`flex-1 py-2.5 text-center transition-colors relative cursor-pointer ${
-              activeTab === "environment"
-                ? "text-[#d86c6c] font-semibold border-b-2 border-[#d86c6c]"
-                : "text-[#9496a1] hover:text-[#f4f4f6]"
-            }`}
+            className={`flex-1 py-3 text-center transition-colors relative cursor-pointer ${activeTab === "environment"
+              ? "text-[#0F172A] font-bold border-b-2 border-[#0F172A]"
+              : "text-[#64748B] hover:text-[#0F172A]"
+              }`}
           >
             GO / NO-GO
           </button>
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans text-xs">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans text-xs bg-white">
           {activeTab === "scores" && (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {Object.values(site.scores).map((crit: CriterionScore, idx) => {
                 const isExp = expandedCriteria[crit.id] || false;
                 return (
                   <div
                     key={crit.id}
-                    className="p-3 rounded-2xl bg-[#121317] border border-[#282a33] hover:border-[#383a46] transition-colors"
+                    className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[#CBD5E1] transition-colors"
                   >
                     <div
                       onClick={() => toggleExpand(crit.id)}
                       className="flex items-center justify-between cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-[#9496a1]">#{idx + 1}</span>
-                        <span className="font-semibold text-xs text-[#f4f4f6]">{crit.name}</span>
+                        <span className="font-mono text-xs text-[#64748B] font-bold">#{idx + 1}</span>
+                        <span className="font-bold text-xs text-[#0F172A]">{crit.name}</span>
                         {crit.isProxy && (
-                          <span className="px-1.5 py-0.2 rounded text-[9px] bg-[#282a33] text-[#9496a1] border border-[#383a46]">
+                          <span className="px-2 py-0.5 rounded-md text-xs bg-[#F1F5F9] text-[#64748B] border border-[#CBD5E1] font-mono">
                             proxy
                           </span>
                         )}
@@ -339,13 +334,13 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
                         <span className={`font-mono font-bold text-sm ${getScoreColor(crit.score)}`}>
                           {crit.score.toFixed(1)}
                         </span>
-                        <span className="text-[#9496a1] text-[10px]">/10</span>
-                        {isExp ? <ChevronUp className="w-3.5 h-3.5 text-[#9496a1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#9496a1]" />}
+                        <span className="text-[#64748B] text-xs">/10</span>
+                        {isExp ? <ChevronUp className="w-4 h-4 text-[#64748B]" /> : <ChevronDown className="w-4 h-4 text-[#64748B]" />}
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-1.5 bg-[#22242c] rounded-full overflow-hidden mt-2">
+                    <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden mt-2.5">
                       <div
                         className={`h-full ${getScoreBg(crit.score)} transition-all duration-300`}
                         style={{ width: `${(crit.score / 10) * 100}%` }}
@@ -353,19 +348,19 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
                     </div>
 
                     {/* Measurement line */}
-                    <div className="text-[11px] text-[#9496a1] mt-1.5 flex justify-between">
+                    <div className="text-xs text-[#64748B] mt-2 flex justify-between font-medium">
                       <span>{crit.measuredValueStr}</span>
-                      <span className="text-[10px] font-mono opacity-80">Ağırlık: %{(crit.weight * 100).toFixed(0)}</span>
+                      <span className="font-mono">Weight: %{(crit.weight * 100).toFixed(0)}</span>
                     </div>
 
                     {/* Expanded details & transparent scientific formula */}
                     {isExp && (
-                      <div className="mt-2.5 pt-2 border-t border-[#22242c] text-[11px] space-y-1.5 animate-fade-in">
-                        <div className="bg-[#181a20] p-2 rounded-xl border border-[#282a33] font-mono text-[10px] text-[#38bdf8]">
-                          <span className="text-[#9496a1] block text-[9px] font-sans">Bilimsel Formül / Mantık:</span>
+                      <div className="mt-3 pt-2.5 border-t border-[#E2E8F0] text-xs space-y-2 animate-fade-in">
+                        <div className="bg-white p-2.5 rounded-xl border border-[#E2E8F0] font-mono text-xs text-[#0F172A]">
+                          <span className="text-[#64748B] block text-xs font-sans font-semibold">Scientific Formulation / Logic:</span>
                           {crit.formulaRationale}
                         </div>
-                        <p className="text-[#9496a1] leading-relaxed">{crit.explanation}</p>
+                        <p className="text-[#64748B] leading-relaxed">{crit.explanation}</p>
                       </div>
                     )}
                   </div>
@@ -376,24 +371,24 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
 
           {activeTab === "criteria" && (
             <div className="space-y-3">
-              <div className="p-3 rounded-2xl bg-[rgba(216,108,108,0.08)] border border-[rgba(216,108,108,0.25)] space-y-1">
-                <span className="font-bold text-[#d86c6c] flex items-center gap-1.5">
-                  <Scale className="w-4 h-4" />
-                  MCDA Bilimsel Değerlendirme Ağırlıkları
+              <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1.5">
+                <span className="font-bold text-[#0F172A] flex items-center gap-2 text-xs">
+                  <Scale className="w-4 h-4 text-[#C2410C]" />
+                  MCDA Scientific Assessment Weights
                 </span>
-                <p className="text-[11px] text-[#9496a1] leading-relaxed">
-                  Puanlama, NASA Artemis İniş Alanı Kriterleri el kitabına uygun olarak ağırlıklandırılmıştır. Zemin eğimi en yüksek ağırlığa (%22) sahiptir.
+                <p className="text-xs text-[#64748B] leading-relaxed">
+                  Scoring is weighted according to NASA Artemis Landing Site Criteria handbook. Terrain slope holds highest weighting (22%).
                 </p>
               </div>
 
               <div className="space-y-2">
                 {Object.values(site.scores).map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-xl bg-[#121317] border border-[#282a33] flex justify-between items-center text-xs">
+                  <div key={c.id} className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex justify-between items-center text-xs">
                     <div>
-                      <span className="font-medium text-[#f4f4f6] block">{c.name}</span>
-                      <span className="text-[10px] text-[#9496a1]">{c.isProxy ? "Analitik Proxy Modeli" : "LOLA DEM / LROC Ölçümü"}</span>
+                      <span className="font-bold text-[#0F172A] block">{c.name}</span>
+                      <span className="text-xs text-[#64748B]">{c.isProxy ? "Analytical Proxy Model" : "LOLA DEM / LROC Measurement"}</span>
                     </div>
-                    <span className="font-mono font-bold text-[#d86c6c]">
+                    <span className="font-mono font-bold text-[#C2410C]">
                       %{(c.weight * 100).toFixed(0)}
                     </span>
                   </div>
@@ -404,60 +399,57 @@ export const SafeSiteDetailPanel: React.FC<SafeSiteDetailPanelProps> = ({
 
           {activeTab === "environment" && (
             <div className="space-y-3">
-              <span className="text-[11px] font-semibold text-[#9496a1] uppercase tracking-wider block">
-                Zorunlu Güvenlik Kriterleri (Hard Constraints)
+              <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider block">
+                Mandatory Flight Safety Rules (Hard Constraints)
               </span>
 
               {/* Slope GO / NO-GO */}
-              <div className={`p-3 rounded-2xl border flex items-start gap-3 ${
-                site.goNoGo.slopePass ? "bg-[#34c759]/10 border-[#34c759]/30" : "bg-[#d86c6c]/10 border-[#d86c6c]/30"
-              }`}>
-                {site.goNoGo.slopePass ? <ShieldCheck className="w-5 h-5 text-[#34c759] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#d86c6c] shrink-0" />}
+              <div className={`p-3.5 rounded-2xl border flex items-start gap-3 ${site.goNoGo.slopePass ? "bg-[#DCFCE7] border-[#86EFAC]" : "bg-[#FEE2E2] border-[#FECACA]"
+                }`}>
+                {site.goNoGo.slopePass ? <ShieldCheck className="w-5 h-5 text-[#15803d] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#B91C1C] shrink-0" />}
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-[#f4f4f6]">Maksimum Zemin Eğimi</span>
-                    <span className={`text-[10px] font-bold font-mono ${site.goNoGo.slopePass ? "text-[#34c759]" : "text-[#d86c6c]"}`}>
-                      {site.goNoGo.slopePass ? "GO (ONAY)" : "NO-GO (RED)"}
+                    <span className="font-bold text-xs text-[#0F172A]">Maximum Terrain Slope</span>
+                    <span className={`text-xs font-bold font-mono ${site.goNoGo.slopePass ? "text-[#15803d]" : "text-[#B91C1C]"}`}>
+                      {site.goNoGo.slopePass ? "GO (PASS)" : "NO-GO (FAIL)"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9496a1] mt-0.5">
-                    Ölçülen eğim {site.measuredSlopeDeg}° • Araç limiti {activeLander.maxSlopeDeg}°
+                  <p className="text-xs text-[#64748B] mt-1">
+                    Measured slope {site.measuredSlopeDeg}° • Vehicle limit {activeLander.maxSlopeDeg}°
                   </p>
                 </div>
               </div>
 
               {/* Flat Area Diameter GO / NO-GO */}
-              <div className={`p-3 rounded-2xl border flex items-start gap-3 ${
-                site.goNoGo.flatDiameterPass ? "bg-[#34c759]/10 border-[#34c759]/30" : "bg-[#d86c6c]/10 border-[#d86c6c]/30"
-              }`}>
-                {site.goNoGo.flatDiameterPass ? <ShieldCheck className="w-5 h-5 text-[#34c759] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#d86c6c] shrink-0" />}
+              <div className={`p-3.5 rounded-2xl border flex items-start gap-3 ${site.goNoGo.flatDiameterPass ? "bg-[#DCFCE7] border-[#86EFAC]" : "bg-[#FEE2E2] border-[#FECACA]"
+                }`}>
+                {site.goNoGo.flatDiameterPass ? <ShieldCheck className="w-5 h-5 text-[#15803d] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#B91C1C] shrink-0" />}
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-[#f4f4f6]">Düz Güvenli İniş Koridoru</span>
-                    <span className={`text-[10px] font-bold font-mono ${site.goNoGo.flatDiameterPass ? "text-[#34c759]" : "text-[#d86c6c]"}`}>
-                      {site.goNoGo.flatDiameterPass ? "GO (ONAY)" : "NO-GO (RED)"}
+                    <span className="font-bold text-xs text-[#0F172A]">Continuous Flat Corridor</span>
+                    <span className={`text-xs font-bold font-mono ${site.goNoGo.flatDiameterPass ? "text-[#15803d]" : "text-[#B91C1C]"}`}>
+                      {site.goNoGo.flatDiameterPass ? "GO (PASS)" : "NO-GO (FAIL)"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9496a1] mt-0.5">
-                    Ölçülen düz çap {site.flatDiameterM} m • Gerekli {activeLander.footprintDiameterM * 2.5} m
+                  <p className="text-xs text-[#64748B] mt-1">
+                    Measured flat diameter {site.flatDiameterM} m • Required {activeLander.footprintDiameterM * 2.5} m
                   </p>
                 </div>
               </div>
 
               {/* Earth Communication GO / NO-GO */}
-              <div className={`p-3 rounded-2xl border flex items-start gap-3 ${
-                site.goNoGo.earthLOSPass ? "bg-[#34c759]/10 border-[#34c759]/30" : "bg-[#d86c6c]/10 border-[#d86c6c]/30"
-              }`}>
-                {site.goNoGo.earthLOSPass ? <ShieldCheck className="w-5 h-5 text-[#34c759] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#d86c6c] shrink-0" />}
+              <div className={`p-3.5 rounded-2xl border flex items-start gap-3 ${site.goNoGo.earthLOSPass ? "bg-[#DCFCE7] border-[#86EFAC]" : "bg-[#FEE2E2] border-[#FECACA]"
+                }`}>
+                {site.goNoGo.earthLOSPass ? <ShieldCheck className="w-5 h-5 text-[#15803d] shrink-0" /> : <ShieldAlert className="w-5 h-5 text-[#B91C1C] shrink-0" />}
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-[#f4f4f6]">Doğrudan DSN İletişimi</span>
-                    <span className={`text-[10px] font-bold font-mono ${site.goNoGo.earthLOSPass ? "text-[#34c759]" : "text-[#d86c6c]"}`}>
-                      {site.goNoGo.earthLOSPass ? "GO (ONAY)" : "RÖLE GEREKLİ"}
+                    <span className="font-bold text-xs text-[#0F172A]">Direct DSN Communication</span>
+                    <span className={`text-xs font-bold font-mono ${site.goNoGo.earthLOSPass ? "text-[#15803d]" : "text-[#B91C1C]"}`}>
+                      {site.goNoGo.earthLOSPass ? "GO (PASS)" : "RELAY REQUIRED"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9496a1] mt-0.5">
-                    {site.earthLOS ? "Dünya doğrudan görüş hattında, röle gerekmez." : "Ay ufku engeli var, röle takımyıldızı zorunludur."}
+                  <p className="text-xs text-[#64748B] mt-1">
+                    {site.earthLOS ? "Unobstructed line-of-sight to Earth, no orbital relay required." : "Lunar horizon obstruction present, orbital relay constellation mandatory."}
                   </p>
                 </div>
               </div>

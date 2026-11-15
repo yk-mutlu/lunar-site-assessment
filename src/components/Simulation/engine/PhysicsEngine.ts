@@ -52,8 +52,10 @@ export function createInitialState(config: SimulationConfig): PhysicsState {
   const profile = LANDER_PROFILES[config.landerProfile] || LANDER_PROFILES.clps_medium;
 
   // Calculate total mass: if config.massKg differs from profile default, adjust fuel proportion
-  const totalMass = config.massKg;
-  const fuelMass = Math.max(0, totalMass - profile.dryMassKg);
+  const nominalFuelMass = Math.max(0, config.massKg - profile.dryMassKg);
+  const fuelFactor = typeof config.initialFuelPct === 'number' ? Math.max(0.1, config.initialFuelPct / 100) : 1.0;
+  const fuelMass = nominalFuelMass * fuelFactor;
+  const totalMass = profile.dryMassKg + fuelMass;
 
   return {
     posX: 0,
@@ -298,22 +300,22 @@ export function generateResult(state: PhysicsState, config: SimulationConfig): S
   let cause = '';
   switch (state.failure) {
     case 'none':
-      cause = `İniş başarılı. Temas hızı: ${touchdownV.toFixed(2)} m/s. Eğim: ${config.slopeDeg.toFixed(1)}°. Motor kesildi.`;
+      cause = `Touchdown confirmed nominal. Contact velocity: ${touchdownV.toFixed(2)} m/s. Surface slope: ${config.slopeDeg.toFixed(1)}°. Engine cutoff verified.`;
       break;
     case 'crash_speed':
-      cause = `YAPISAL ÇÖKME: Dikey temas hızı (${touchdownV.toFixed(1)} m/s) amortisör limitini (${config.maxLandingSpeed} m/s) aştı.`;
+      cause = `STRUCTURAL COLLAPSE: Vertical touchdown speed (${touchdownV.toFixed(1)} m/s) exceeded shock strut tolerance (${config.maxLandingSpeed} m/s).`;
       break;
     case 'tipover':
-      cause = `DİNAMİK DEVRİLME: Zemin eğimi (${config.slopeDeg.toFixed(1)}°) araç stabilite limitini (${config.tipoverDeg.toFixed(1)}°) aştı.`;
+      cause = `DYNAMIC TIP-OVER: Local terrain slope (${config.slopeDeg.toFixed(1)}°) exceeded static center-of-mass stability limit (${config.tipoverDeg.toFixed(1)}°).`;
       break;
     case 'fuel_starvation':
-      cause = `YAKIT TÜKENMESİ: Yakıt ${state.posY.toFixed(0)}m irtifada bitti. Serbest düşüş başladı.`;
+      cause = `FUEL EXHAUSTION: Propellant depleted at ${state.posY.toFixed(0)}m altitude. Free-fall impact ensued.`;
       break;
     case 'insufficient_thrust':
-      cause = `YETERSİZ İTKİ: İtki/ağırlık oranı < 1. Araç yerçekimine karşı koyamadı.`;
+      cause = `INSUFFICIENT THRUST: Thrust-to-weight ratio < 1.0. Lander could not arrest descent rate.`;
       break;
     case 'radar_lock_loss':
-      cause = `RADAR KİLİDİ KAYBI: Yüksek yatay hız nedeniyle TRN kilidi kayboldu. Sürüklenme başladı.`;
+      cause = `LOSS OF TRN LOCK: Excessive horizontal drift rate caused loss of LiDAR altimeter lock.`;
       break;
   }
 

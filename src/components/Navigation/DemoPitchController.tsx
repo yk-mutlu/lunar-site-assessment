@@ -74,7 +74,7 @@ export const DemoPitchController: React.FC<DemoPitchControllerProps> = ({
       case 1: {
         // Step 1: Ensure surface mode and fly to Best Site
         setViewMode("surface");
-        setStepLabel(`1/4 · En Güvenli Saha Seçimi: ${bestSite.name} (Puan: ${bestSite.overallScore.toFixed(1)}/10)`);
+        setStepLabel(`1/4 · Prime Site Assessment: ${bestSite.name} (Score: ${bestSite.overallScore.toFixed(1)}/10)`);
         setSelectedCandidateSite(bestSite);
         setLeftDetailPanelOpen(true);
 
@@ -86,7 +86,7 @@ export const DemoPitchController: React.FC<DemoPitchControllerProps> = ({
 
       case 2: {
         // Step 2: Trigger nominal simulation on best site
-        setStepLabel(`2/4 · Nominal İniş Simülasyonu: Düşük Eğim (${bestSite.measuredSlopeDeg}°)`);
+        setStepLabel(`2/4 · Nominal Landing Simulation: Low Slope (${bestSite.measuredSlopeDeg}°)`);
         onStartSimulation(bestSite);
 
         timeoutRef.current = setTimeout(() => {
@@ -98,7 +98,7 @@ export const DemoPitchController: React.FC<DemoPitchControllerProps> = ({
 
       case 3: {
         // Step 3: Return and fly to Risky Site
-        setStepLabel(`3/4 · Kritik Eğimli Sahaya Geçiş: ${riskySite.name} (Eğim: ${riskySite.measuredSlopeDeg}°)`);
+        setStepLabel(`3/4 · High-Risk Terrain Transition: ${riskySite.name} (Slope: ${riskySite.measuredSlopeDeg}°)`);
         setSelectedCandidateSite(riskySite);
         setLeftDetailPanelOpen(true);
 
@@ -110,7 +110,7 @@ export const DemoPitchController: React.FC<DemoPitchControllerProps> = ({
 
       case 4: {
         // Step 4: Simulate risky site -> Tipover demonstration
-        setStepLabel(`4/4 · Dinamik Devrilme & Hata Analizi Doğrulaması`);
+        setStepLabel(`4/4 · Dynamic Vehicle Tip-Over & Hazard Verification`);
         onStartSimulation(riskySite);
 
         timeoutRef.current = setTimeout(() => {
@@ -138,38 +138,38 @@ export const DemoPitchController: React.FC<DemoPitchControllerProps> = ({
         <div className="fixed bottom-6 left-28 z-30 pointer-events-auto">
           <button
             onClick={handleStartDemo}
-            className="bg-[#181a20]/95 backdrop-blur-md hover:bg-[#22242c] text-[#f4f4f6] border border-[#d86c6c]/60 rounded-full px-4 h-11 flex items-center gap-2 shadow-tesla text-xs font-bold transition-all active:scale-95 cursor-pointer group"
+            className="bg-white/95 backdrop-blur-md hover:bg-[#F1F3F4] text-[#202124] border border-[#E8EAED] rounded-full px-4 h-11 flex items-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.12)] text-xs font-semibold transition-all active:scale-95 cursor-pointer group"
           >
-            <div className="w-5 h-5 rounded-full bg-[#d86c6c]/20 flex items-center justify-center text-[#d86c6c] group-hover:bg-[#d86c6c] group-hover:text-white transition-colors">
+            <div className="w-5 h-5 rounded-full bg-[#E8F0FE] flex items-center justify-center text-[#1A73E8] group-hover:bg-[#1A73E8] group-hover:text-white transition-colors">
               <Play className="w-3 h-3 fill-current ml-0.5" />
             </div>
-            <span>Demo Akışı (Jüri Sunumu)</span>
+            <span>Pitch Demo Flow</span>
           </button>
         </div>
       )}
 
       {/* Active Demo Pitch Floating Banner */}
       {isDemoFlowActive && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto bg-[#181a20]/95 backdrop-blur-md border border-[#d86c6c] rounded-2xl shadow-tesla px-5 py-3 flex items-center gap-4 text-xs font-sans animate-fade-in">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-auto bg-white/95 backdrop-blur-md border border-[#1A73E8] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] px-5 py-3 flex items-center gap-4 text-xs font-sans animate-fade-in text-[#202124]">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#d86c6c] animate-ping" />
-            <span className="font-mono text-[#d86c6c] font-bold uppercase tracking-wider text-[11px]">
-              CANLI JÜRİ DEMO AKIŞI
+            <span className="w-2.5 h-2.5 rounded-full bg-[#1A73E8] animate-ping" />
+            <span className="font-mono text-[#1A73E8] font-bold uppercase tracking-wider text-[11px]">
+              LIVE PITCH DEMO
             </span>
           </div>
 
-          <div className="h-4 w-px bg-[#282a33]" />
+          <div className="h-4 w-px bg-[#E8EAED]" />
 
-          <span className="text-[#f4f4f6] font-semibold text-xs">
+          <span className="text-[#202124] font-semibold text-xs">
             {stepLabel}
           </span>
 
           <button
             onClick={stopDemo}
-            className="ml-2 px-3 py-1 rounded-full bg-[#22242c] hover:bg-[#2c2f3a] text-[#9496a1] hover:text-[#f4f4f6] text-[11px] font-medium border border-[#282a33] flex items-center gap-1.5 cursor-pointer"
+            className="ml-2 px-3 py-1 rounded-full bg-[#F1F3F4] hover:bg-[#E8EAED] text-[#5F6368] hover:text-[#202124] text-[11px] font-medium border border-[#E8EAED] flex items-center gap-1.5 cursor-pointer"
           >
-            <Square className="w-3 h-3 fill-current text-[#d86c6c]" />
-            <span>Durdur (ESC)</span>
+            <Square className="w-3 h-3 fill-current text-[#EA4335]" />
+            <span>Stop (ESC)</span>
           </button>
         </div>
       )}

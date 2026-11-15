@@ -83,6 +83,8 @@ export interface SimulationConfig {
   heightmapData?: Float32Array;
   initialAltitudeM: number;
   initialVerticalSpeedMs: number;
+  initialFuelPct?: number;
+  sensorNoisePct?: number;
 }
 
 export const DEFAULT_CONFIG: SimulationConfig = {

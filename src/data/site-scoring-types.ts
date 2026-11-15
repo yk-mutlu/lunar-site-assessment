@@ -26,7 +26,7 @@ export interface CandidateSite {
   radiationScore: number;  // Space radiation risk (0-10)
   tempDayK: number;        // Peak daytime surface temp
   tempNightK: number;      // Cryogenic night temp
-  dustRisk: 'Düşük' | 'Orta' | 'Yüksek'; // Electrostatic dust levitation
+  dustRisk: 'Low' | 'Moderate' | 'High'; // Electrostatic dust levitation
   earthLOS: boolean;       // Direct-to-Earth line of sight
   earthElevationDeg: number;
   solarEfficiencyPct: number;
@@ -35,7 +35,7 @@ export interface CandidateSite {
   approachClearanceDeg: number; // Obstacle-free approach corridor
   scores: SiteScores;
   overallScore: number;    // 0 to 10 with 1 decimal
-  suitabilityLabel: 'Mükemmel' | 'Çok İyi' | 'Orta' | 'Riskli' | 'Uygun Değil';
+  suitabilityLabel: 'Optimal' | 'Highly Suitable' | 'Moderate' | 'Risky' | 'Unsuitable';
   goNoGo: {
     slopePass: boolean;
     flatDiameterPass: boolean;
@@ -70,14 +70,14 @@ export interface SiteScores {
 
 // ── Deterministic Naming Bank ─────────────────────────────────────────
 export const LUNAR_SITE_NAMES: Array<{ name: string; prefix: string; tone: string }> = [
-  { name: 'Selene Plateau', prefix: 'LS-01', tone: 'Geniş anortozitik bazalt platosu, kesintisiz DSN bağlantısı' },
-  { name: 'Artemis Zone Alpha', prefix: 'LS-02', tone: 'Düşük eğimli tepe sırtı, yüksek güneş aydınlanma süresi' },
-  { name: 'Luna Haven', prefix: 'LS-03', tone: 'Krater sekonder ejektalarından korunaklı düz regolit vadisi' },
-  { name: 'Aurora Flats', prefix: 'LS-04', tone: 'Mikro-kayaç yoğunluğu minimum seviyede olan teras formasyonu' },
-  { name: 'Tranquil Crest', prefix: 'LS-05', tone: 'Doğrudan Dünya görüş hattına sahip yükseltilmiş sırt' },
-  { name: 'Helios Terrace', prefix: 'LS-06', tone: 'Güneş paneli verimi yüksek, düşük gölge riskli basamak' },
-  { name: 'Nyx Basin Margin', prefix: 'LS-07', tone: 'Kalıcı gölgeli krater tabanına ve su buzuna yakın koridor' },
-  { name: 'Orion Meadow', prefix: 'LS-08', tone: 'Geniş iniş dağılım elipsine uygun engelsiz iniş ovası' },
+  { name: 'Selene Plateau', prefix: 'LS-01', tone: 'Broad anorthositic basalt plateau, continuous DSN coverage' },
+  { name: 'Artemis Zone Alpha', prefix: 'LS-02', tone: 'Low-slope ridge formation, high annual solar uptime' },
+  { name: 'Luna Haven', prefix: 'LS-03', tone: 'Flat regolith basin sheltered from crater secondary ejecta' },
+  { name: 'Aurora Flats', prefix: 'LS-04', tone: 'Stable terrace formation with minimal sub-meter boulder density' },
+  { name: 'Tranquil Crest', prefix: 'LS-05', tone: 'Elevated ridge offering continuous direct-to-Earth line-of-sight' },
+  { name: 'Helios Terrace', prefix: 'LS-06', tone: 'High photovoltaic incidence yield with minimal topographic shadowing' },
+  { name: 'Nyx Basin Margin', prefix: 'LS-07', tone: 'Accessible transit corridor adjacent to PSR cold-trap water ice' },
+  { name: 'Orion Meadow', prefix: 'LS-08', tone: 'Extensive obstacle-free landing plain suited for large dispersion ellipses' },
 ];
 
 // ── Criteria Weights & Tolerance Functions ────────────────────────────

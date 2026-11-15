@@ -1,5 +1,15 @@
 export type LayerMode = "imagery" | "elevation" | "slope" | "water_ice";
-export type ViewMode = "3d" | "2d" | "surface";
+export type ViewMode =
+  | "3d"
+  | "2d"
+  | "surface"
+  | "mission_config"
+  | "launch_sim"
+  | "orbit_preview"
+  | "descent_sim"
+  | "surface_traverse"
+  | "lunar_return"
+  | "earth";
 
 export interface LunarRock {
   id: string;
@@ -44,6 +54,15 @@ export interface HorizonEphemeris {
   isSunVisible: boolean;
   isEarthVisible: boolean;
   solarPowerPotentialPct: number;
+  solarIrradianceWm2?: number;
+  panelOrientationWatts?: {
+    vertical: number;
+    horizontal: number;
+    tracking: number;
+  };
+  rfLinkMarginDb?: number;
+  isGeometricLOS?: boolean;
+  isCommsViable?: boolean;
 }
 
 export interface LunarTarget {

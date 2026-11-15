@@ -108,18 +108,14 @@ export const CinematicDescentTransition: React.FC<CinematicDescentTransitionProp
             <span className="px-2 py-0.5 rounded-full bg-[#d86c6c]/20 text-[#d86c6c] border border-[#d86c6c]/40 text-xs font-mono font-bold">
               {siteCode || "LS-01"}
             </span>
-            <span className="text-xs uppercase font-mono tracking-widest text-[#38bdf8] font-bold">
-              İniş Dizisi Başlatılıyor
+            <span className="text-xs uppercase font-mono tracking-widest text-[#1A73E8] font-bold">
+              Descent Sequence Initiated
             </span>
           </div>
 
           <h3 className="text-xl font-bold text-white tracking-tight">
-            {siteName || "Seçilen Ay Sahası"}
+            {siteName || "Selected Lunar Site"}
           </h3>
-
-          <p className="text-xs text-[#9496a1] max-w-sm">
-            DEM yükseklik verileri ve yerel topoğrafik eğim simülasyon motoruna yükleniyor...
-          </p>
         </div>
 
         {/* Progress Bar */}
