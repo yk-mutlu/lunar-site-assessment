@@ -207,7 +207,7 @@ export const Stage5LunarReturnView: React.FC = () => {
     controls.dampingFactor = 0.05;
     controls.maxDistance = 350;
     controls.minDistance = 2;
-    controls.enabled = true; // Always allow free 360° mouse rotation as requested by user
+    controls.enabled = cameraMode === "free"; // Only enable OrbitControls when in Free 3D mode so it doesn't fight camera tracking
 
     // ── 2. Environmental Lighting ───────────────────────────────────
     const ambientLight = new THREE.AmbientLight(0x1a2638, 0.45);
@@ -701,14 +701,15 @@ export const Stage5LunarReturnView: React.FC = () => {
           setHeatShieldTempC(Math.round(25 + p1 * 120));
           setGForce(Number((1.0 + p1 * 1.8).toFixed(2)));
 
-          // Camera
+          // Camera Tracking (Phase 1: Lunar Liftoff)
           if (cameraMode === "cinematic") {
+            controls.target.set(0, climbY + 0.8, 0);
             camera.position.set(
-              -12.0 + p1 * 6.0,
-              2.2 + p1 * 35.0,
-              18.0 + p1 * 12.0
+              -10.0 + p1 * 4.0,
+              climbY + 3.2,
+              14.0 + p1 * 5.0
             );
-            camera.lookAt(0, climbY, 0);
+            camera.lookAt(0, climbY + 0.8, 0);
           }
         }
         // ════════════════════════════════════════════════════════════
@@ -749,14 +750,15 @@ export const Stage5LunarReturnView: React.FC = () => {
           setHeatShieldTempC(Math.round(THREE.MathUtils.lerp(95, 840, p2)));
           setGForce(0.08);
 
-          // Camera
+          // Camera Tracking (Phase 2: Translunar Deep Space)
           if (cameraMode === "cinematic") {
+            controls.target.set(spacecraft.position.x, spacecraft.position.y + 0.5, spacecraft.position.z);
             camera.position.set(
-              spacecraft.position.x - 14.0,
-              spacecraft.position.y + 6.5,
-              spacecraft.position.z + 20.0
+              spacecraft.position.x - 9.0,
+              spacecraft.position.y + 3.5,
+              spacecraft.position.z + 14.0
             );
-            camera.lookAt(spacecraft.position.x, spacecraft.position.y, spacecraft.position.z);
+            camera.lookAt(spacecraft.position.x, spacecraft.position.y + 0.5, spacecraft.position.z);
           }
         }
         // ════════════════════════════════════════════════════════════
@@ -817,10 +819,11 @@ export const Stage5LunarReturnView: React.FC = () => {
           setHeatShieldTempC(peakTemp);
           setGForce(Number((1.2 + plasmaCurve * 5.5).toFixed(2)));
 
-          // Camera (Dynamic reentry chase with subtle shake)
+          // Camera Tracking (Phase 3: Hypersonic Chase with dramatic shake)
           if (cameraMode === "cinematic") {
-            const shake = (Math.random() - 0.5) * 0.15;
-            camera.position.set(-14.0 + shake, currentY + 4.5 + shake, 18.0);
+            const shake = (Math.random() - 0.5) * 0.12;
+            controls.target.set(0, currentY, 0);
+            camera.position.set(-10.0 + shake, currentY + 3.5 + shake, 14.0);
             camera.lookAt(0, currentY, 0);
           }
         }
@@ -878,9 +881,11 @@ export const Stage5LunarReturnView: React.FC = () => {
             setHeatShieldTempC(Math.round(THREE.MathUtils.lerp(280, 45, p4 / 0.92)));
             setGForce(1.0);
 
+            // Camera Tracking (Phase 4A: Parachute descent)
             if (cameraMode === "cinematic") {
-              camera.position.set(-16.0, descendY + 5.5, 20.0);
-              camera.lookAt(0, descendY + 2.0, 0);
+              controls.target.set(0, descendY + 1.2, 0);
+              camera.position.set(-11.0, descendY + 4.5, 15.0);
+              camera.lookAt(0, descendY + 1.2, 0);
             }
           } else {
             // Touchdown & Floating on Ocean Waves!
@@ -928,9 +933,11 @@ export const Stage5LunarReturnView: React.FC = () => {
             setHeatShieldTempC(24);
             setGForce(1.0);
 
+            // Camera Tracking (Phase 4B: Floating on water)
             if (cameraMode === "cinematic" || cameraMode === "ocean") {
-              camera.position.set(7.5, 2.4, 7.5);
-              camera.lookAt(0, floatY + 0.5, 0);
+              controls.target.set(0, floatY + 0.4, 0);
+              camera.position.set(6.5, floatY + 2.0, 6.5);
+              camera.lookAt(0, floatY + 0.4, 0);
             }
           }
         }
@@ -938,14 +945,19 @@ export const Stage5LunarReturnView: React.FC = () => {
 
       // Camera Modes
       if (cameraMode === "capsule") {
-        camera.position.set(spacecraft.position.x - 5.5, spacecraft.position.y + 1.8, spacecraft.position.z + 6.5);
-        camera.lookAt(spacecraft.position.x, spacecraft.position.y + 0.8, spacecraft.position.z);
-      } else if (cameraMode === "ocean") {
-        camera.position.set(8.5, 2.2, 8.5);
+        controls.target.set(spacecraft.position.x, spacecraft.position.y + 0.4, spacecraft.position.z);
+        camera.position.set(spacecraft.position.x - 4.5, spacecraft.position.y + 1.2, spacecraft.position.z + 5.5);
         camera.lookAt(spacecraft.position.x, spacecraft.position.y + 0.4, spacecraft.position.z);
+      } else if (cameraMode === "ocean") {
+        controls.target.set(spacecraft.position.x, spacecraft.position.y + 0.4, spacecraft.position.z);
+        camera.position.set(7.5, 1.8, 7.5);
+        camera.lookAt(spacecraft.position.x, spacecraft.position.y + 0.4, spacecraft.position.z);
+      } else if (cameraMode === "free") {
+        controls.target.set(spacecraft.position.x, spacecraft.position.y, spacecraft.position.z);
+        controls.update();
       }
 
-      controls.update();
+      renderer.render(scene, camera);
       renderer.render(scene, camera);
     };
 
@@ -978,59 +990,59 @@ export const Stage5LunarReturnView: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden select-none bg-[#020306] font-sans text-white">
+    <div className="relative w-full h-full overflow-hidden select-none bg-[#020306] font-sans text-[#202124]">
       {/* 3D WebGL Canvas */}
       <div ref={mountRef} className="w-full h-full" />
 
       {/* ── TOP CONTROL & TELEMETRY BAR ── */}
       <div className="absolute top-4 left-4 right-4 z-20 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pointer-events-none">
-        
+
         {/* Left Telemetry Card */}
-        <div className="pointer-events-auto bg-[#090d16]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-3 px-4 shadow-[0_8px_32px_0_rgba(0,0,0,0.45)] flex flex-wrap items-center gap-4 text-xs">
+        <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-[#E8EAED] rounded-2xl p-3 px-5 shadow-[0_2px_12px_rgba(0,0,0,0.15)] flex flex-wrap items-center gap-4 text-xs text-[#202124]">
           <div className="flex items-center gap-2">
             <span
               className={`w-2.5 h-2.5 rounded-full ${
-                isSplashdown ? "bg-emerald-400" : "bg-cyan-400 animate-pulse"
+                isSplashdown ? "bg-[#34A853]" : "bg-[#1A73E8] animate-pulse"
               }`}
             />
             <div>
-              <span className="tracking-wide font-semibold text-white uppercase text-xs block">
+              <span className="font-semibold text-[#202124] uppercase text-xs block">
                 {isSplashdown ? "Pacific Splashdown Confirmed" : "Stage 5: Earth Return & Splashdown"}
               </span>
-              <span className="text-[10px] text-cyan-300 font-mono">
+              <span className="text-[11px] text-[#5F6368]">
                 Artemis III Crew Return Module
               </span>
             </div>
           </div>
 
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-6 w-px bg-[#E8EAED] hidden sm:block" />
 
           <div>
-            <span className="text-white/50 text-[10px] block font-mono">Altitude</span>
-            <span className="font-semibold text-white text-sm">{altitudeStr}</span>
+            <span className="text-[#5F6368] text-[10px] block">Altitude</span>
+            <span className="font-semibold text-[#202124] text-sm">{altitudeStr}</span>
           </div>
 
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-6 w-px bg-[#E8EAED] hidden sm:block" />
 
           <div>
-            <span className="text-white/50 text-[10px] block font-mono">Velocity</span>
-            <span className="font-semibold text-cyan-400 text-sm">{velocityStr}</span>
+            <span className="text-[#5F6368] text-[10px] block">Velocity</span>
+            <span className="font-semibold text-[#1A73E8] text-sm">{velocityStr}</span>
           </div>
 
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-6 w-px bg-[#E8EAED] hidden sm:block" />
 
           <div>
-            <span className="text-white/50 text-[10px] block font-mono">Mach Number</span>
-            <span className="font-semibold text-white text-sm">Mach {machNumber}</span>
+            <span className="text-[#5F6368] text-[10px] block">Mach Number</span>
+            <span className="font-semibold text-[#202124] text-sm">Mach {machNumber}</span>
           </div>
 
-          <div className="h-4 w-px bg-white/10" />
+          <div className="h-6 w-px bg-[#E8EAED] hidden sm:block" />
 
           <div>
-            <span className="text-white/50 text-[10px] block font-mono">Heat Shield</span>
+            <span className="text-[#5F6368] text-[10px] block">Heat Shield</span>
             <span
               className={`font-semibold text-sm ${
-                heatShieldTempC > 1800 ? "text-rose-400 animate-pulse" : "text-amber-400"
+                heatShieldTempC > 1800 ? "text-[#EA4335] animate-pulse" : "text-[#E37400]"
               }`}
             >
               {heatShieldTempC}°C
@@ -1039,7 +1051,7 @@ export const Stage5LunarReturnView: React.FC = () => {
         </div>
 
         {/* 4 Phases Tracker & Jump Controls */}
-        <div className="pointer-events-auto bg-[#090d16]/85 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-[0_8px_32px_0_rgba(0,0,0,0.45)] flex items-center gap-1.5 overflow-x-auto max-w-full">
+        <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-[#E8EAED] rounded-2xl p-1.5 shadow-[0_2px_12px_rgba(0,0,0,0.15)] flex items-center gap-1.5 overflow-x-auto max-w-full">
           {EDL_PHASES.map((phase) => {
             const isCurrent = activePhaseId === phase.id;
             const isPassed = activePhaseId > phase.id;
@@ -1049,19 +1061,19 @@ export const Stage5LunarReturnView: React.FC = () => {
                 onClick={() => jumpToPhase(phase.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                   isCurrent
-                    ? "bg-gradient-to-r from-cyan-600 to-indigo-600 text-white font-semibold shadow-md"
+                    ? "bg-[#1A73E8] text-white font-semibold shadow-sm"
                     : isPassed
-                    ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
-                    : "text-white/50 hover:text-white/80 hover:bg-white/5"
+                    ? "text-[#137333] bg-[#E6F4EA] border border-[#34A853]/30 font-medium"
+                    : "text-[#5F6368] hover:text-[#202124] hover:bg-[#F1F3F4]"
                 }`}
                 title={phase.toast}
               >
                 {isPassed ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#137333]" />
                 ) : (
                   <span
                     className={`w-2 h-2 rounded-full ${
-                      isCurrent ? "bg-white animate-pulse" : "bg-white/30"
+                      isCurrent ? "bg-white animate-pulse" : "bg-[#5F6368]/40"
                     }`}
                   />
                 )}
@@ -1073,13 +1085,13 @@ export const Stage5LunarReturnView: React.FC = () => {
 
         {/* Right Camera Controls & Actions */}
         <div className="pointer-events-auto flex items-center gap-2 self-end lg:self-auto">
-          <div className="bg-[#090d16]/85 backdrop-blur-xl border border-white/10 rounded-xl p-1 flex items-center gap-1 text-xs shadow-md">
+          <div className="bg-white/95 backdrop-blur-md border border-[#E8EAED] rounded-[10px] p-1 flex items-center gap-1 text-xs shadow-sm">
             <button
               onClick={() => setCameraMode("cinematic")}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-[6px] font-medium transition-colors cursor-pointer ${
                 cameraMode === "cinematic"
-                  ? "bg-cyan-600 text-white font-semibold"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-[#1A73E8] text-white font-semibold"
+                  : "text-[#5F6368] hover:text-[#202124]"
               }`}
               title="Cinematic Dynamic Multi-Phase Camera"
             >
@@ -1087,10 +1099,10 @@ export const Stage5LunarReturnView: React.FC = () => {
             </button>
             <button
               onClick={() => setCameraMode("free")}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-[6px] font-medium transition-colors cursor-pointer ${
                 cameraMode === "free"
-                  ? "bg-cyan-600 text-white font-semibold"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-[#1A73E8] text-white font-semibold"
+                  : "text-[#5F6368] hover:text-[#202124]"
               }`}
               title="Free 360° Mouse Orbit Control"
             >
@@ -1098,10 +1110,10 @@ export const Stage5LunarReturnView: React.FC = () => {
             </button>
             <button
               onClick={() => setCameraMode("capsule")}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-[6px] font-medium transition-colors cursor-pointer ${
                 cameraMode === "capsule"
-                  ? "bg-cyan-600 text-white font-semibold"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-[#1A73E8] text-white font-semibold"
+                  : "text-[#5F6368] hover:text-[#202124]"
               }`}
               title="Focus on Capsule & Heat Shield"
             >
@@ -1109,10 +1121,10 @@ export const Stage5LunarReturnView: React.FC = () => {
             </button>
             <button
               onClick={() => setCameraMode("ocean")}
-              className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-[6px] font-medium transition-colors cursor-pointer ${
                 cameraMode === "ocean"
-                  ? "bg-cyan-600 text-white font-semibold"
-                  : "text-white/60 hover:text-white"
+                  ? "bg-[#1A73E8] text-white font-semibold"
+                  : "text-[#5F6368] hover:text-[#202124]"
               }`}
               title="Ocean Surface View"
             >
@@ -1122,26 +1134,26 @@ export const Stage5LunarReturnView: React.FC = () => {
 
           <button
             onClick={() => setIsPaused(!isPaused)}
-            className="bg-[#090d16]/85 hover:bg-white/10 text-white p-2.5 rounded-xl border border-white/10 shadow-md transition-colors cursor-pointer"
+            className="bg-white/95 hover:bg-[#F1F3F4] text-[#202124] p-2.5 rounded-[10px] border border-[#E8EAED] shadow-sm transition-colors cursor-pointer"
             title={isPaused ? "Resume" : "Pause"}
           >
-            {isPaused ? <Play className="w-4 h-4 text-emerald-400" /> : <Pause className="w-4 h-4 text-amber-400" />}
+            {isPaused ? <Play className="w-4 h-4 text-[#137333]" /> : <Pause className="w-4 h-4 text-[#E37400]" />}
           </button>
 
           <button
             onClick={handleRestart}
-            className="bg-[#090d16]/85 hover:bg-white/10 text-white p-2.5 rounded-xl border border-white/10 shadow-md transition-colors cursor-pointer"
+            className="bg-white/95 hover:bg-[#F1F3F4] text-[#1A73E8] p-2.5 rounded-[10px] border border-[#E8EAED] shadow-sm transition-colors cursor-pointer"
             title="Restart Stage 5 from Lunar Liftoff"
           >
-            <RotateCcw className="w-4 h-4 text-cyan-400" />
+            <RotateCcw className="w-4 h-4 text-[#1A73E8]" />
           </button>
 
           <button
             onClick={toggleSound}
-            className={`p-2.5 rounded-xl border shadow-md transition-colors cursor-pointer ${
+            className={`p-2.5 rounded-[10px] border border-[#E8EAED] shadow-sm transition-colors cursor-pointer ${
               soundEnabled
-                ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400"
-                : "bg-[#090d16]/85 border-white/10 text-white/50 hover:text-white"
+                ? "bg-[#1A73E8] text-white"
+                : "bg-white/95 hover:bg-[#F1F3F4] text-[#5F6368] hover:text-[#202124]"
             }`}
             title={soundEnabled ? "Mute Atmospheric Sound" : "Enable Sound Effects"}
           >
@@ -1150,36 +1162,36 @@ export const Stage5LunarReturnView: React.FC = () => {
 
           <button
             onClick={() => setViewMode("surface_traverse")}
-            className="bg-[#090d16]/85 hover:bg-white/10 text-white px-3 py-2 rounded-xl border border-white/10 shadow-md transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
+            className="bg-white/95 hover:bg-[#F1F3F4] text-[#202124] px-3 py-2 rounded-[10px] border border-[#E8EAED] shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-medium"
             title="Back to Stage 4 Lunar Traverse"
           >
-            <ArrowLeft className="w-4 h-4 text-white/60" />
+            <ArrowLeft className="w-4 h-4 text-[#5F6368]" />
             <span className="hidden sm:inline">Stage 4</span>
           </button>
         </div>
       </div>
 
-      {/* ── BOTTOM LIVE INFORMATION CARD ── */}
+      {/* ── BOTTOM LIVE INFORMATION CARD (Google Maps Style) ── */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none max-w-xl w-[90%]">
-        <div className="pointer-events-auto bg-[#090d16]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-3.5 px-5 shadow-[0_8px_32px_0_rgba(0,0,0,0.55)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="space-y-1 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="font-bold text-cyan-400 text-sm">
+        <div className="pointer-events-auto bg-white/95 backdrop-blur-md border border-[#E8EAED] rounded-2xl p-3 px-5 shadow-[0_2px_12px_rgba(0,0,0,0.15)] flex items-center justify-between gap-3 text-xs text-[#202124]">
+          <div className="space-y-0.5 text-left">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-[#202124] text-sm">
                 {EDL_PHASES.find((p) => p.id === activePhaseId)?.name}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 text-[10px] font-semibold border border-cyan-500/20">
-                LIVE 3D SIMULATION
+              <span className="px-2 py-0.5 rounded-full bg-[#E8F0FE] text-[#1A73E8] text-[10px] font-semibold">
+                LIVE SIMULATION
               </span>
             </div>
-            <p className="text-[11px] text-white/70 leading-relaxed">{currentToast}</p>
+            <p className="text-[11px] text-[#5F6368] leading-tight">{currentToast}</p>
           </div>
 
           {isSplashdown && (
             <button
               onClick={() => setViewMode("2d")}
-              className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white px-5 py-2.5 rounded-xl font-semibold text-xs shadow-lg shadow-emerald-500/25 flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+              className="bg-[#1A73E8] hover:bg-[#1565C0] text-white px-4 py-2 rounded-[10px] font-semibold text-xs shadow-sm flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
             >
-              <span>Mission Complete: Review Sites</span>
+              <span>Review Sites</span>
               <ArrowRight className="w-4 h-4 text-white" />
             </button>
           )}
@@ -1188,53 +1200,53 @@ export const Stage5LunarReturnView: React.FC = () => {
 
       {/* ── MISSION COMPLETION SUCCESS MODAL ── */}
       {isSplashdown && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fade-in pointer-events-auto">
-          <div className="backdrop-blur-2xl bg-[#090d16]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-[0_16px_48px_0_rgba(0,0,0,0.75)] space-y-5 text-center text-white">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400">
-              <Award className="w-9 h-9" />
+        <div className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in pointer-events-auto">
+          <div className="bg-white border border-[#E8EAED] rounded-2xl p-6 sm:p-7 max-w-lg w-full shadow-[0_8px_32px_rgba(0,0,0,0.2)] space-y-4 text-center text-[#202124]">
+            <div className="w-14 h-14 rounded-2xl bg-[#E6F4EA] border border-[#34A853]/40 flex items-center justify-center mx-auto text-[#137333]">
+              <Award className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-400 block mb-1">
+              <span className="text-[11px] font-semibold text-[#137333] uppercase tracking-wider block mb-1">
                 Lunar Mission Completed Successfully
               </span>
-              <h2 className="text-2xl font-bold tracking-tight text-white">
+              <h2 className="text-xl font-bold tracking-tight text-[#202124]">
                 Crew Capsule Splashdown Confirmed!
               </h2>
-              <p className="text-xs text-white/60 mt-2 leading-relaxed">
+              <p className="text-xs text-[#5F6368] mt-1.5 leading-relaxed">
                 The crew capsule has successfully returned from the Moon, completed hypersonic atmospheric reentry with maximum thermal protection, deployed ring-sail parachutes, and safely splashed down in the Pacific Ocean. All lunar regolith and ice samples intact.
               </p>
             </div>
 
-            <div className="bg-white/5 rounded-2xl p-4 text-xs grid grid-cols-2 gap-3 text-left border border-white/5 font-mono">
-              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
-                <span className="text-white/40 text-[10px] block">Returned Samples:</span>
-                <span className="font-semibold text-cyan-300">11.6 kg Regolith & Ice</span>
+            <div className="bg-[#F8F9FA] rounded-[10px] p-3 text-xs grid grid-cols-2 gap-2 text-left border border-[#E8EAED]">
+              <div>
+                <span className="text-[#5F6368] text-[11px] block">Returned Samples:</span>
+                <span className="font-semibold text-[#1A73E8]">11.6 kg Regolith & Ice</span>
               </div>
-              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
-                <span className="text-white/40 text-[10px] block">Splashdown Site:</span>
-                <span className="font-semibold text-white">Pacific Ocean (28.4°N, 142.1°W)</span>
+              <div>
+                <span className="text-[#5F6368] text-[11px] block">Splashdown Site:</span>
+                <span className="font-semibold text-[#202124]">Pacific Ocean (28.4°N, 142.1°W)</span>
               </div>
-              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
-                <span className="text-white/40 text-[10px] block">Touchdown Speed:</span>
-                <span className="font-semibold text-emerald-400">7.8 m/s (Nominal Float)</span>
+              <div>
+                <span className="text-[#5F6368] text-[11px] block">Touchdown Speed:</span>
+                <span className="font-semibold text-[#137333]">7.8 m/s (Nominal Float)</span>
               </div>
-              <div className="bg-white/5 p-2.5 rounded-xl border border-white/5">
-                <span className="text-white/40 text-[10px] block">Flotation Ballasts:</span>
-                <span className="font-semibold text-emerald-400">Active & Stable</span>
+              <div>
+                <span className="text-[#5F6368] text-[11px] block">Flotation Ballasts:</span>
+                <span className="font-semibold text-[#137333]">Active & Stable</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={handleRestart}
-                className="flex-1 bg-white/10 hover:bg-white/15 text-white py-3 px-4 rounded-xl font-semibold text-xs border border-white/10 transition-all cursor-pointer"
+                className="flex-1 bg-[#F8F9FA] hover:bg-[#E8EAED] text-[#202124] py-2.5 px-3 rounded-[10px] font-semibold text-xs border border-[#E8EAED] transition-all cursor-pointer"
               >
                 Replay Mission Return
               </button>
               <button
                 onClick={() => setViewMode("2d")}
-                className="flex-1 bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white py-3 px-4 rounded-xl font-semibold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="flex-1 bg-[#1A73E8] hover:bg-[#1565C0] text-white py-2.5 px-3 rounded-[10px] font-semibold text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <span>Lunar Site Map</span>
                 <ArrowRight className="w-4 h-4 text-white" />
